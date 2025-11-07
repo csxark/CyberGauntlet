@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Shield, Users, User, LogIn } from 'lucide-react';
 import { GlitchText } from './GlitchText';
 import { TerminalBox } from './TerminalBox';
-import { validateTeam, teams } from '../data/teamData';
+import { validateTeam } from '../data/teamData';
 
 interface AuthPageProps {
   onAuth: (teamId: string, teamName: string, leaderName: string) => void;
