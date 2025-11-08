@@ -1,19 +1,38 @@
 export interface TeamData {
   id: string;
-  name: string;
   leaderName: string;
 }
 
 export const teams: TeamData[] = [
-  { id: "team1", name: "test", leaderName: "admin" },
-  { id: "team2", name: "test1", leaderName: "ark" },
-  { id: "team3", name: "test2", leaderName: "vedant" },
-  { id: "team4", name: "test3", leaderName: "suyash" },
+  { id: 'alpha', leaderName: 'Alice' },
+  { id: 'beta', leaderName: 'Bob' },
+  { id: 'gamma', leaderName: 'Charlie' },
+  { id: 'delta', leaderName: 'Diana' },
+  { id: 'epsilon', leaderName: 'Ethan' },
+  { id: 'zeta', leaderName: 'Zara' },
+  { id: 'eta', leaderName: 'Eve' },
+  { id: 'theta', leaderName: 'Tom' },
+  { id: 'iota', leaderName: 'Ivy' },
+  { id: 'kappa', leaderName: 'Kyle' },
+  { id: 'lambda', leaderName: 'Luna' },
+  { id: 'mu', leaderName: 'Mia' },
+  { id: 'nu', leaderName: 'Nate' },
+  { id: 'xi', leaderName: 'Xander' },
+  { id: 'omicron', leaderName: 'Olivia' },
+  { id: 'pi', leaderName: 'Paul' },
+  { id: 'rho', leaderName: 'Rita' },
+  { id: 'sigma', leaderName: 'Sam' },
+  { id: 'tau', leaderName: 'Tina' },
+  { id: 'upsilon', leaderName: 'Uma' },
+  { id: 'phi', leaderName: 'Phil' },
+  { id: 'chi', leaderName: 'Chloe' },
+  { id: 'psi', leaderName: 'Pete' },
+  { id: 'omega', leaderName: 'Olga' },
 ];
 
 export const validateTeam = (teamName: string, leaderName: string): TeamData | null => {
   return teams.find(
-    (t) => t.name.toLowerCase() === teamName.toLowerCase() &&
+    (t) => teamName.toLowerCase() &&
            t.leaderName.toLowerCase() === leaderName.toLowerCase()
   ) || null;
 };
