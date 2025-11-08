@@ -67,8 +67,8 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
   const [loading, setLoading] = useState(true);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
-  const [showLeaderboard, setShowLeaderboard] = useState(false);
-  const [leaderboardData, setLeaderboardData] = useState<any[]>([]);
+  // const [showLeaderboard, setShowLeaderboard] = useState(false);
+  // const [leaderboardData, setLeaderboardData] = useState<any[]>([]);
   const [completedQuestions, setCompletedQuestions] = useState<string[]>([]);
 
   useEffect(() => {
@@ -76,7 +76,7 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
   }, [teamId]);
 
   useEffect(() => {
-    let interval: number | undefined;
+    let interval: ReturnType<typeof setInterval> | undefined;
     if (isRunning && challenge && !challenge.completed) {
       interval = setInterval(() => {
         setElapsedTime(prev => {
@@ -227,18 +227,18 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
     return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const loadLeaderboard = async () => {
-    try {
-      const { data } = await supabase
-        .from('leaderboard')
-        .select('*')
-        .order('time_spent', { ascending: true })
-        .order('attempts', { ascending: true });
-      setLeaderboardData(data || []);
-    } catch (err) {
-      console.error('Error loading leaderboard:', err);
-    }
-  };
+  // const loadLeaderboard = async () => {
+  //   try {
+  //     const { data } = await supabase
+  //       .from('leaderboard')
+  //       .select('*')
+  //       .order('time_spent', { ascending: true })
+  //       .order('attempts', { ascending: true });
+  //     setLeaderboardData(data || []);
+  //   } catch (err) {
+  //     console.error('Error loading leaderboard:', err);
+  //   }
+  // };
 
   const allQuestionsCompleted = completedQuestions.length === SAMPLE_QUESTIONS.length;
 
@@ -291,11 +291,33 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
               <GlitchText text="CYBER" className="text-green-500" />
               <span className="text-green-400">GAUNTLET</span>
             </h1>
-            <p className="text-green-300/60 text-sm mt-1">Team: {teamName} | Leader: {leaderName}</p>
-            <p className="text-green-300/50 text-xs mt-1">Progress: {completedQuestions.length}/{SAMPLE_QUESTIONS.length} challenges completed</p>
           </div>
-          <div className="flex items-center gap-4">
-            <button
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-6 px-4 py-3 bg-green-500/5 rounded-lg border border-green-500/20">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <p className="text-green-300/80 text-sm">
+                <span className="text-green-300/60">Team:</span>{" "}
+                <span className="font-semibold">{teamName}</span>
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+              <p className="text-green-300/80 text-sm">
+                <span className="text-green-300/60">Leader:</span>{" "}
+                <span className="font-semibold">{leaderName}</span>
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-green-400/50 rounded-full"></div>
+              <p className="text-green-300/80 text-sm">
+                <span className="text-green-300/60">Progress:</span>{" "}
+                <span className="font-semibold">{completedQuestions.length}</span>
+                <span className="text-green-300/60">/{SAMPLE_QUESTIONS.length} completed</span>
+              </p>
+            </div>
+          </div>
+        </header>
+        {/* <button
               onClick={() => {
                 setShowLeaderboard(!showLeaderboard);
                 if (!showLeaderboard) loadLeaderboard();
@@ -304,18 +326,15 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
             >
               <Trophy className="w-4 h-4" />
               LEADERBOARD
-            </button>
-            <button
+            </button> */}
+        {/* <button
               onClick={onLogout}
               className="flex items-center gap-2 bg-green-500/10 hover:bg-green-500/20 border border-green-500 text-green-400 px-4 py-2 rounded transition-all text-sm"
             >
               <LogOut className="w-4 h-4" />
               LOGOUT
-            </button>
-          </div>
-        </header>
-
-        {showLeaderboard && (
+            </button> */}
+        {/* {showLeaderboard && (
           <div className="mb-6">
             <TerminalBox title="leaderboard.sh">
               {leaderboardData.length === 0 ? (
@@ -354,7 +373,7 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
               )}
             </TerminalBox>
           </div>
-        )}
+        )} */}
 
         <div className="space-y-6">
           <TerminalBox title={`challenge_${question?.id}.sh`}>
@@ -425,11 +444,10 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
             </form>
 
             {result && (
-              <div className={`mt-4 p-4 rounded-lg border-2 flex items-center gap-3 animate-fade-in ${
-                result === 'correct'
+              <div className={`mt-4 p-4 rounded-lg border-2 flex items-center gap-3 animate-fade-in ${result === 'correct'
                   ? 'bg-green-500/10 border-green-500 text-green-400'
                   : 'bg-red-500/10 border-red-500 text-red-400'
-              }`}>
+                }`}>
                 {result === 'correct' ? (
                   <>
                     <CheckCircle className="w-6 h-6 flex-shrink-0" />
