@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Download, Terminal, CheckCircle, XCircle, Clock, LogOut, Trophy } from 'lucide-react';
+import { Download, Terminal, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { GlitchText } from './GlitchText';
 import { TerminalBox } from './TerminalBox';
 import { supabase } from '../lib/supabase';
