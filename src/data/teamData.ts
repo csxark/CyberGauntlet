@@ -4,14 +4,13 @@ export interface TeamData {
 }
 
 export const teams: TeamData[] = [
-  { id: 'alpha', leaderName: 'Alice' },
-  { id: 'beta', leaderName: 'Bob' },
-  { id: 'gamma', leaderName: 'Charlie' },
-  { id: 'delta', leaderName: 'Diana' },
-  { id: 'epsilon', leaderName: 'Ethan' },
-  { id: 'zeta', leaderName: 'Zara' },
-  { id: 'eta', leaderName: 'Eve' },
-  { id: 'theta', leaderName: 'Tom' },
+  { id: 'alpha', leaderName: 'A' },
+  { id: 'beta', leaderName: 'B' },
+  { id: 'gamma', leaderName: 'C' },
+  { id: 'delta', leaderName: 'D' },
+  { id: 'epsilon', leaderName: 'E' },
+  { id: 'zeta', leaderName: 'F' },
+  { id: 'theta', leaderName: 'G' },
   { id: 'iota', leaderName: 'Ivy' },
   { id: 'kappa', leaderName: 'Kyle' },
   { id: 'lambda', leaderName: 'Luna' },
