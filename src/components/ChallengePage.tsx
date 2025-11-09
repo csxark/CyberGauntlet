@@ -89,7 +89,7 @@ description: "You are a cybersecurity consultant investigating a breach at the M
   "description": "You are a penetration tester attempting to recover a sensitive 6-character access key stored in a proprietary system. You have managed to dump the raw memory register, but the developer didn't use standard decimal numbers. Instead, they used a custom 'Quinary System' encoding where all values are calculated using powers of five before being stored. The captured, encoded register value (in the Quinary System) is the following sequence of three-digit numbers separated by colons: (313 : 310 : 314 : 421 : 322 : 310)",
   "file_name": "",
   "file_path": "",
-  "correct_flag": "CG{SPOTWP}",
+  "correct_flag": "CG{SPToWP}",
   "hints": [
     "Each three-digit number represents a character in the ASCII range",
     "Convert each quinary number to decimal using powers of 5",
