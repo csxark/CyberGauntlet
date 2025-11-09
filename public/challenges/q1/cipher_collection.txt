@@ -1,0 +1,12 @@
+Cipher 1: 
+This substitution cipher uses a fixed rotational key that shifts every letter 3 positions backward in the alphabet to decrypt the secret message.
+Wkh Foxh
+
+Cipher 2: 
+The ciphertext uses a fractionating substitution method where each letter is replaced by two characters using a 5x5 Polybius square and a keyword.
+gdgad daxxg fgffd gfgxg daggd dfadf dgxfd a
+
+Cipher 3: 
+The cipher is a fixed-shift substitution where applying the shift twice decrypts the message, as it uses a key of 13.
+Guvf vf gur Synt!
+
