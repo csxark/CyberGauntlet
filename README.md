@@ -111,5 +111,14 @@ If you would like assistance adding challenges, integrating a scoreboard, or aut
 ## License
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
+## 📁 Project Structure
+
+```text
+docs/            → README.md, ADMIN_SETUP.md, Contributor.md  
+src/             → Application source code  
+public/          → Public assets and challenges  
+database/        → Supabase migrations  
+config/          → ESLint, Vite, Tailwind, PostCSS, TSConfig files  
+
 
 Feel free to use and modify the code as needed for your own CTF events!
