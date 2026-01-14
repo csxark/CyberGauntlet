@@ -1,0 +1,4 @@
+There are multiple ciphers in cipher_collection.txt, but only one hides the real flag. Start with the simplest:
+- Try a classic Caesar shift with rotation 3.
+- If that’s a decoy, examine patterns suggesting grids (Polybius) or column swaps (columnar transposition).
+- Flag format: CG{...}

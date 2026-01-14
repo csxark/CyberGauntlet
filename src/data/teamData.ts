@@ -24,8 +24,14 @@ export const teams: TeamData[] = [
 ];
 
 export const validateTeam = (teamName: string, leaderName: string): TeamData | null => {
-  return teams.find(
-    (t) => teamName.toLowerCase() &&
-           t.leaderName.toLowerCase() === leaderName.toLowerCase()
-  ) || null;
+  const tn = teamName.trim().toLowerCase();
+  const ln = leaderName.trim().toLowerCase();
+  if (!tn || !ln) return null;
+
+  // Match by team id (treated as team name) and leader name, case-insensitive
+  return (
+    teams.find(
+      (t) => t.id.trim().toLowerCase() === tn && t.leaderName.trim().toLowerCase() === ln
+    ) || null
+  );
 };

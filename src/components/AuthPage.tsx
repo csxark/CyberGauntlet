@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Shield, Users, User, LogIn } from 'lucide-react';
 import { GlitchText } from './GlitchText';
 import { TerminalBox } from './TerminalBox';
@@ -51,7 +51,7 @@ export function AuthPage({ onAuth }: AuthPageProps) {
         <TerminalBox title="login.sh">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-green-400 mb-2 text-sm flex items-center gap-2">
+              <label className="text-green-400 mb-2 text-sm flex items-center gap-2">
                 <Users className="w-4 h-4" />
                 TEAM NAME:
               </label>
@@ -66,7 +66,7 @@ export function AuthPage({ onAuth }: AuthPageProps) {
             </div>
 
             <div>
-              <label className="block text-green-400 mb-2 text-sm flex items-center gap-2">
+              <label className="text-green-400 mb-2 text-sm flex items-center gap-2">
                 <User className="w-4 h-4" />
                 LEADER NAME:
               </label>

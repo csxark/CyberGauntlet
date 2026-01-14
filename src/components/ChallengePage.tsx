@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Download, Terminal, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { GlitchText } from './GlitchText';
 import { TerminalBox } from './TerminalBox';
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 interface ChallengePageProps {
   teamId: string;
@@ -217,13 +217,15 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
       const newCompleted = [...completedQuestions, question.id];
       localStorage.setItem(`cybergauntlet_completed_${teamId}`, JSON.stringify(newCompleted));
 
-      await supabase.from('leaderboard').insert({
-        team_name: teamName,
-        question_id: question.id,
-        time_spent: completedTime,
-        attempts: newAttempts,
-        completed_at: new Date().toISOString()
-      });
+      if (isSupabaseConfigured) {
+        await supabase.from('leaderboard').insert({
+          team_name: teamName,
+          question_id: question.id,
+          time_spent: completedTime,
+          attempts: newAttempts,
+          completed_at: new Date().toISOString()
+        });
+      }
 
       setChallenge(updatedChallenge);
       setCompletedQuestions(newCompleted);

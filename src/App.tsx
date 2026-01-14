@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AuthPage } from './components/AuthPage';
 import { ChallengePage } from './components/ChallengePage';
-import { supabase } from './lib/supabase';
+import { supabase, isSupabaseConfigured } from './lib/supabase';
 
 function generateDeviceId(): string {
   return Math.random().toString(36).substring(2) + Date.now().toString(36);
@@ -28,7 +28,7 @@ function App() {
         return id;
       })();
 
-      if (savedAuth) {
+      if (savedAuth && isSupabaseConfigured) {
         const auth = JSON.parse(savedAuth);
         const { data: session, error } = await supabase
           .from('team_sessions')
@@ -54,6 +54,14 @@ function App() {
         }
       }
 
+      // If Supabase is not configured, fallback to trusting local auth state
+      if (savedAuth && !isSupabaseConfigured) {
+        const auth = JSON.parse(savedAuth);
+        setTeamId(auth.teamId);
+        setTeamName(auth.teamName);
+        setLeaderName(auth.leaderName);
+        setAuthenticated(true);
+      }
       setLoading(false);
     } catch (err) {
       console.error('Error checking auth status:', err);
@@ -66,39 +74,41 @@ function App() {
       const currentDeviceId = localStorage.getItem('cybergauntlet_current_device') || generateDeviceId();
       localStorage.setItem('cybergauntlet_current_device', currentDeviceId);
 
-      const { data: existingSession, error: fetchError } = await supabase
-        .from('team_sessions')
-        .select('*')
-        .eq('team_id', id)
-        .maybeSingle();
-
-      if (fetchError && fetchError.code !== 'PGRST116') {
-        throw fetchError;
-      }
-
-      if (existingSession && existingSession.is_active) {
-        setDeviceRestricted(true);
-        return;
-      }
-
-      if (existingSession && !existingSession.is_active) {
-        await supabase
+      if (isSupabaseConfigured) {
+        const { data: existingSession, error: fetchError } = await supabase
           .from('team_sessions')
-          .update({
-            device_id: currentDeviceId,
-            logged_in_at: new Date().toISOString(),
-            is_active: true,
-            last_activity: new Date().toISOString()
-          })
-          .eq('team_id', id);
-      } else {
-        await supabase
-          .from('team_sessions')
-          .insert({
-            team_id: id,
-            device_id: currentDeviceId,
-            is_active: true
-          });
+          .select('*')
+          .eq('team_id', id)
+          .maybeSingle();
+
+        if (fetchError && (fetchError as any).code !== 'PGRST116') {
+          throw fetchError;
+        }
+
+        if (existingSession && existingSession.is_active) {
+          setDeviceRestricted(true);
+          return;
+        }
+
+        if (existingSession && !existingSession.is_active) {
+          await supabase
+            .from('team_sessions')
+            .update({
+              device_id: currentDeviceId,
+              logged_in_at: new Date().toISOString(),
+              is_active: true,
+              last_activity: new Date().toISOString()
+            })
+            .eq('team_id', id);
+        } else {
+          await supabase
+            .from('team_sessions')
+            .insert({
+              team_id: id,
+              device_id: currentDeviceId,
+              is_active: true
+            });
+        }
       }
 
       setTeamId(id);
@@ -114,7 +124,7 @@ function App() {
 
   const handleLogout = async () => {
     try {
-      if (teamId) {
+      if (teamId && isSupabaseConfigured) {
         await supabase
           .from('team_sessions')
           .update({ is_active: false })
