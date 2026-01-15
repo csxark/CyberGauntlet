@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
-import { Download, Terminal, CheckCircle, XCircle, Clock } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Download, Terminal, CheckCircle, XCircle, Clock, Trophy, LogOut } from 'lucide-react';
 import { GlitchText } from './GlitchText';
 import { TerminalBox } from './TerminalBox';
+import { Leaderboard } from './Leaderboard';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 interface ChallengePageProps {
@@ -106,8 +107,7 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
   const [loading, setLoading] = useState(true);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
-  // const [showLeaderboard, setShowLeaderboard] = useState(false);
-  // const [leaderboardData, setLeaderboardData] = useState<any[]>([]);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [completedQuestions, setCompletedQuestions] = useState<string[]>([]);
 
   useEffect(() => {
@@ -332,31 +332,55 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
               <span className="text-green-400">GAUNTLET</span>
             </h1>
           </div>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-6 px-4 py-3 bg-green-500/5 rounded-lg border border-green-500/20">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <p className="text-green-300/80 text-sm">
-                <span className="text-green-300/60">Team:</span>{" "}
-                <span className="font-semibold">{teamName}</span>
-              </p>
+          <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-6 px-4 py-3 bg-green-500/5 rounded-lg border border-green-500/20">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <p className="text-green-300/80 text-sm">
+                  <span className="text-green-300/60">Team:</span>{" "}
+                  <span className="font-semibold">{teamName}</span>
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                <p className="text-green-300/80 text-sm">
+                  <span className="text-green-300/60">Leader:</span>{" "}
+                  <span className="font-semibold">{leaderName}</span>
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-400/50 rounded-full"></div>
+                <p className="text-green-300/80 text-sm">
+                  <span className="text-green-300/60">Progress:</span>{" "}
+                  <span className="font-semibold">{completedQuestions.length}</span>
+                  <span className="text-green-300/60">/{SAMPLE_QUESTIONS.length} completed</span>
+                </p>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-              <p className="text-green-300/80 text-sm">
-                <span className="text-green-300/60">Leader:</span>{" "}
-                <span className="font-semibold">{leaderName}</span>
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-green-400/50 rounded-full"></div>
-              <p className="text-green-300/80 text-sm">
-                <span className="text-green-300/60">Progress:</span>{" "}
-                <span className="font-semibold">{completedQuestions.length}</span>
-                <span className="text-green-300/60">/{SAMPLE_QUESTIONS.length} completed</span>
-              </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowLeaderboard(!showLeaderboard)}
+                className="flex items-center gap-2 bg-green-500/10 hover:bg-green-500/20 border border-green-500 text-green-400 px-4 py-2 rounded transition-all text-sm"
+              >
+                <Trophy className="w-4 h-4" />
+                {showLeaderboard ? 'HIDE' : 'SHOW'} LEADERBOARD
+              </button>
+              <button
+                onClick={onLogout}
+                className="flex items-center gap-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500 text-red-400 px-4 py-2 rounded transition-all text-sm"
+              >
+                <LogOut className="w-4 h-4" />
+                LOGOUT
+              </button>
             </div>
           </div>
         </header>
+
+        {showLeaderboard && (
+          <div className="mb-6">
+            <Leaderboard currentTeamName={teamName} />
+          </div>
+        )}
         {/* <button
               onClick={() => {
                 setShowLeaderboard(!showLeaderboard);
