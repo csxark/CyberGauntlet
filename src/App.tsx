@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { LandingPage } from './components/LandingPage';
 import { AuthPage } from './components/AuthPage';
 import { ChallengePage } from './components/ChallengePage';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
@@ -14,6 +16,7 @@ function App() {
   const [leaderName, setLeaderName] = useState('');
   const [deviceRestricted, setDeviceRestricted] = useState(false);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     checkAuthStatus();
@@ -87,6 +90,7 @@ function App() {
 
         if (existingSession && existingSession.is_active) {
           setDeviceRestricted(true);
+          navigate('/restricted');
           return;
         }
 
@@ -116,6 +120,7 @@ function App() {
       setLeaderName(leader);
       setAuthenticated(true);
       localStorage.setItem('cybergauntlet_auth', JSON.stringify({ teamId: id, teamName: name, leaderName: leader }));
+      navigate('/challenges');
     } catch (err) {
       console.error('Error during authentication:', err);
       alert('Authentication failed. Please try again.');
@@ -135,26 +140,21 @@ function App() {
       setTeamId('');
       setTeamName('');
       setLeaderName('');
+      setDeviceRestricted(false);
       localStorage.removeItem('cybergauntlet_auth');
+      navigate('/');
     } catch (err) {
       console.error('Error during logout:', err);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 text-green-400 font-mono flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin mb-4">
-            <div className="w-12 h-12 text-green-500">⌛</div>
-          </div>
-          <p>Initializing...</p>
-        </div>
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (deviceRestricted) {
+      navigate('/restricted', { replace: true });
+    }
+  }, [deviceRestricted, navigate]);
 
-  if (deviceRestricted) {
+  function DeviceRestrictedPage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 text-red-400 font-mono flex items-center justify-center p-4">
         <div className="scanlines"></div>
@@ -170,27 +170,67 @@ function App() {
             </p>
           </div>
           <button
-            onClick={() => window.location.reload()}
+            onClick={() => navigate('/')}
             className="bg-red-600 hover:bg-red-700 text-black font-bold py-2 px-6 rounded transition-all"
           >
-            REFRESH
+            GO TO HOME
           </button>
         </div>
       </div>
     );
   }
 
-  if (!authenticated) {
-    return <AuthPage onAuth={handleAuth} />;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 text-green-400 font-mono flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin mb-4">
+            <div className="w-12 h-12 text-green-500">⌛</div>
+          </div>
+          <p>Initializing...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <ChallengePage
-      teamId={teamId}
-      teamName={teamName}
-      leaderName={leaderName}
-      onLogout={handleLogout}
-    />
+    <Routes>
+      <Route path="/" element={<LandingPage />} />
+      <Route 
+        path="/auth" 
+        element={
+          authenticated ? (
+            <Navigate to="/challenges" replace />
+          ) : deviceRestricted ? (
+            <Navigate to="/restricted" replace />
+          ) : (
+            <AuthPage onAuth={handleAuth} />
+          )
+        } 
+      />
+      <Route
+        path="/restricted"
+        element={<DeviceRestrictedPage />}
+      />
+      <Route
+        path="/challenges"
+        element={
+          deviceRestricted ? (
+            <Navigate to="/restricted" replace />
+          ) : authenticated ? (
+            <ChallengePage
+              teamId={teamId}
+              teamName={teamName}
+              leaderName={leaderName}
+              onLogout={handleLogout}
+            />
+          ) : (
+            <Navigate to="/auth" replace />
+          )
+        }
+      />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }
 
