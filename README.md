@@ -17,6 +17,18 @@ npm install
 npm run dev
 ```
 
+## Docker (Optional)
+
+This repository supports an optional Docker-based local development workflow.
+It is intended to reduce setup friction and keep environments consistent across OSes.
+
+Start the dev stack:
+```powershell
+docker compose up --build
+```
+
+For a deeper walkthrough, see `docker_guide.md`.
+
 Build and preview a production bundle:
 
 ```powershell

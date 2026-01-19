@@ -1,0 +1,32 @@
+# Production-like Compose stack (optional)
+#
+# This is intentionally separate from `docker-compose.yml` so the default flow
+# stays dev-first (bind mounts + HMR). Use this when you want a parity check:
+# - Build assets via `npm run build`
+# - Serve them via `vite preview`
+#
+# Usage:
+#   docker compose -f docker-compose.prod.yml up --build
+#
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: prod
+      args:
+        NODE_VERSION: "20"
+    init: true
+    restart: unless-stopped
+    ports:
+      # Map to 8080 to avoid colliding with the dev stack's 5173 port.
+      - "8080:4173"
+    env_file:
+      - ./.env.example
+    environment:
+      NODE_ENV: production
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:4173', (r) => process.exit(r.statusCode >= 200 && r.statusCode < 500 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 10

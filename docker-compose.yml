@@ -1,0 +1,34 @@
+services:
+  frontend:
+    # CyberGauntlet frontend (Vite + React + TypeScript).
+    # Dev-first: bind mounts enable instant feedback during challenge authoring.
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
+      args:
+        NODE_VERSION: "20"
+    init: true
+    ports:
+      - "5173:5173"
+    env_file:
+      # Optional: use as defaults for Supabase integration.
+      # Contributors can create a local `.env` without changing the compose file.
+      - ./.env.example
+    environment:
+      # More reliable file watching on Docker Desktop file shares.
+      CHOKIDAR_USEPOLLING: "true"
+    volumes:
+      # Source bind mount for live reload (editing `src/` and `public/challenges/`).
+      - ./:/app
+      # Keep node_modules inside Docker (prevents OS-specific conflicts).
+      - frontend-node-modules:/app/node_modules
+    healthcheck:
+      # Vite responds on "/" once the dev server is ready.
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5173', (r) => process.exit(r.statusCode >= 200 && r.statusCode < 500 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  frontend-node-modules:
