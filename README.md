@@ -2,6 +2,20 @@
 
 CyberGauntlet is a lightweight CTF-style platform focused on cipher challenges. Players download encrypted assets, apply provided hints to recover plaintext, and submit flags or answers. This repository contains a React + TypeScript frontend and a simple challenge layout served from `public/challenges`.
 
+## 🎨 UI Preview
+
+A quick visual overview of the platform:
+
+### 🏁 Landing Page
+![Landing UI](docs/screenshots/landing.png)
+
+### 🔐 Login / Registration
+![Login UI](docs/screenshots/login.png)
+
+### 🎯 Mission Objectives
+![Objective UI](docs/screenshots/objective.png)
+
+---
 ## Features
 
 - Static challenge delivery via `public/`
@@ -126,7 +140,7 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 ## 📁 Project Structure
 
 ```text
-docs/            → README.md, ADMIN_SETUP.md, Contributor.md  
+docs/            → README.md, ADMIN_SETUP.md, Contributor.md,LEADERBOARD_IMPLEMENTATION.md,CODE_OF_CONDUCT.md,screenshots
 src/             → Application source code  
 public/          → Public assets and challenges  
 database/        → Supabase migrations  
