@@ -1,13 +1,42 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate, Link } from 'react-router-dom';
 import { LandingPage } from './components/LandingPage';
 import { AuthPage } from './components/AuthPage';
 import { ChallengePage } from './components/ChallengePage';
+import DocsPage from './components/DocsPage'; // Ensure this path matches where you saved DocsPage.tsx
 import { supabase, isSupabaseConfigured } from './lib/supabase';
+import { AlertTriangle } from 'lucide-react';
 
 function generateDeviceId(): string {
   return Math.random().toString(36).substring(2) + Date.now().toString(36);
 }
+
+// --- NEW: THEMED 404 PAGE ---
+const NotFound = () => (
+  <div className="min-h-screen bg-[#050505] text-green-500 font-mono flex flex-col items-center justify-center p-4">
+    <div className="border border-red-500/50 p-8 rounded bg-red-900/10 max-w-md w-full text-center relative overflow-hidden">
+      {/* Glitch Overlay */}
+      <div className="absolute inset-0 pointer-events-none opacity-10 bg-[repeating-linear-gradient(45deg,transparent,transparent_10px,#ff0000_10px,#ff0000_20px)]"></div>
+      
+      <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-4 animate-pulse" />
+      <h1 className="text-4xl font-black text-white mb-2">404 ERROR</h1>
+      <p className="text-red-400 mb-6">SIGNAL LOST. COORDINATES INVALID.</p>
+      
+      <div className="font-mono text-xs text-red-500/50 mb-8 text-left space-y-1">
+        <p>{'>'} trace_route(current_loc)</p>
+        <p>{'>'} ERROR: Destination unreachable</p>
+        <p>{'>'} initiating_emergency_protocol...</p>
+      </div>
+
+      <Link 
+        to="/" 
+        className="inline-block bg-red-600 hover:bg-red-500 text-black font-bold py-3 px-8 rounded transition-all hover:scale-105"
+      >
+        RETURN TO BASE
+      </Link>
+    </div>
+  </div>
+);
 
 function App() {
   const [authenticated, setAuthenticated] = useState(false);
@@ -196,6 +225,10 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
+      
+      {/* --- ADDED DOCS ROUTE --- */}
+      <Route path="/docs" element={<DocsPage />} />
+
       <Route 
         path="/auth" 
         element={
@@ -208,10 +241,12 @@ function App() {
           )
         } 
       />
+      
       <Route
         path="/restricted"
         element={<DeviceRestrictedPage />}
       />
+      
       <Route
         path="/challenges"
         element={
@@ -229,7 +264,9 @@ function App() {
           )
         }
       />
-      <Route path="*" element={<Navigate to="/" replace />} />
+      
+      {/* --- UPDATED CATCH-ALL ROUTE --- */}
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }
