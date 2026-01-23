@@ -12,7 +12,8 @@ import {
   Users,
   ChevronRight,
   Cpu,
-  Globe
+  Globe,
+  Book // <--- Added Book Icon import
 } from 'lucide-react';
 
 // --- 1. UTILITY: SCROLL REVEAL COMPONENT ---
@@ -47,7 +48,7 @@ const ScrollReveal = ({ children, delay = 0 }: { children: React.ReactNode, dela
   );
 };
 
-// --- 1. BOOT SEQUENCE ---
+// --- 2. BOOT SEQUENCE ---
 const BootSequence = ({ onComplete }: { onComplete: () => void }) => {
   const [text, setText] = useState<string[]>([]);
   
@@ -63,14 +64,12 @@ const BootSequence = ({ onComplete }: { onComplete: () => void }) => {
     let currentIndex = 0;
 
     const interval = setInterval(() => {
-      // Safety Check: Stop if we reached the end
       if (currentIndex >= sequence.length) {
         clearInterval(interval);
         setTimeout(onComplete, 800); 
         return;
       }
       
-      // Safe Access: Only access .text if the item exists
       const currentItem = sequence[currentIndex];
       if (currentItem) {
         setText(prev => [...prev, currentItem.text]);
@@ -227,7 +226,7 @@ const HackerTerminal = () => {
   );
 };
 
-// --- 5. NEW "MISSION OBJECTIVES" COMPONENT (CYBER STYLE) ---
+// --- 5. MISSION OBJECTIVES COMPONENT ---
 const MissionCard = ({ 
   icon: Icon, 
   title, 
@@ -243,17 +242,13 @@ const MissionCard = ({
 }) => (
   <ScrollReveal delay={delay}>
     <div className="relative group h-full">
-      {/* Animated Background Blob */}
       <div className="absolute -inset-0.5 bg-gradient-to-r from-green-500 to-blue-500 rounded-lg blur opacity-0 group-hover:opacity-30 transition duration-500"></div>
       
-      {/* Card Body with Angled Tech Look */}
       <div className="relative h-full bg-black/80 backdrop-blur-xl border border-green-500/30 p-8 flex flex-col transition-all duration-300 hover:translate-y-[-5px] hover:shadow-[0_10px_30px_-10px_rgba(34,197,94,0.3)] clip-path-tech">
         
-        {/* Corner Accents */}
         <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-green-500/50"></div>
         <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-green-500/50"></div>
         
-        {/* Scanning Line Animation */}
         <div className="absolute top-0 left-0 w-full h-[2px] bg-green-400 opacity-0 group-hover:opacity-100 animate-scan-fast shadow-[0_0_10px_#4ade80]"></div>
 
         <div className="flex items-start justify-between mb-6">
@@ -319,6 +314,13 @@ export function LandingPage() {
           </div>
           <div className="flex items-center gap-3 md:gap-6">
             <span className="hidden md:block text-xs text-green-500/50 animate-pulse">● SYSTEM ONLINE</span>
+            
+            {/* --- ADDED DOCS LINK HERE --- */}
+            <Link to="/docs" className="flex items-center gap-2 text-xs md:text-sm font-bold text-gray-400 hover:text-green-400 transition-colors mr-2">
+                <Book className="w-4 h-4" />
+                <span className="hidden sm:inline">DOCS</span>
+            </Link>
+
             <Link to="/auth" className="text-xs md:text-sm font-bold bg-green-600/10 hover:bg-green-600 hover:text-black border border-green-500/50 px-4 md:px-6 py-2 rounded transition-all">
               LOGIN
             </Link>
@@ -366,12 +368,12 @@ export function LandingPage() {
                <div className="absolute -inset-1 bg-gradient-to-r from-green-600 to-blue-600 rounded-lg blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
                <div className="relative bg-black border border-green-500/30 rounded-lg p-2 shadow-2xl transform transition-transform duration-500 lg:group-hover:rotate-y-1 lg:group-hover:rotate-x-1">
                  <HackerTerminal />
-              </div>
+               </div>
             </div>
           </div>
         </section>
 
-        {/* --- NEW MISSION OBJECTIVES LAYOUT --- */}
+        {/* --- MISSION OBJECTIVES --- */}
         <section className="container mx-auto px-4 py-12 md:py-24">
           <ScrollReveal>
             <div className="flex flex-col md:flex-row items-end justify-between mb-16 border-b border-green-500/20 pb-4">
@@ -387,7 +389,6 @@ export function LandingPage() {
             </div>
           </ScrollReveal>
 
-          {/* Cyber Grid Layout */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <MissionCard 
               delay={0}
@@ -465,7 +466,7 @@ export function LandingPage() {
         </section>
 
         <footer className="bg-black py-8 border-t border-green-900 text-center text-xs text-gray-600 font-mono">
-          <p>CYBERGAUNTLET SYSTEM v2.5.0 // EST. 2025</p>
+          <p>CYBERGAUNTLET SYSTEM v2.5.0 // EST. 2026</p>
         </footer>
       </div>
     </div>
