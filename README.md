@@ -7,13 +7,13 @@ CyberGauntlet is a lightweight CTF-style platform focused on cipher challenges. 
 A quick visual overview of the platform:
 
 ### 🏁 Landing Page
-![Landing UI](docs/screenshots/landing.png)
+![Landing UI](Docs/screenshots/landing.png)
 
 ### 🔐 Login / Registration
-![Login UI](docs/screenshots/login.png)
+![Login UI](Docs/screenshots/login.png)
 
 ### 🎯 Mission Objectives
-![Objective UI](docs/screenshots/objective.png)
+![Objective UI](Docs/screenshots/objective.png)
 
 ---
 ## Features
