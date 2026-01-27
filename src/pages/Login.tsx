@@ -1,7 +1,86 @@
-import { useState } from 'react';
+import { useState, useRef, useMemo, Suspense } from 'react';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from "react-router-dom";
-import { Mail, Lock, Sparkles, ArrowRight } from 'lucide-react';
+import { Mail, Lock, Shield, ArrowRight, Terminal, Cpu } from 'lucide-react';
+import * as THREE from 'three';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { Float, Stars } from '@react-three/drei';
+
+// --- 1. SHARED 3D BACKGROUND COMPONENTS (Reused for consistency) ---
+
+const RotatingCore = () => {
+  const meshRef = useRef<THREE.Mesh>(null!);
+  useFrame((state) => {
+    const t = state.clock.getElapsedTime();
+    if(meshRef.current) {
+        meshRef.current.rotation.x = t * 0.2;
+        meshRef.current.rotation.y = t * 0.3;
+    }
+  });
+  return (
+    <Float speed={2} rotationIntensity={0.5} floatIntensity={1}>
+      <mesh ref={meshRef} scale={2.5}>
+        <icosahedronGeometry args={[1, 1]} />
+        <meshBasicMaterial 
+          color="#22c55e" 
+          wireframe 
+          transparent 
+          opacity={0.3} 
+          blending={THREE.AdditiveBlending} 
+        />
+      </mesh>
+    </Float>
+  );
+};
+
+const DataParticles = ({ count = 300 }) => {
+  const points = useMemo(() => {
+    const p = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++) {
+      p[i * 3] = (Math.random() - 0.5) * 15;
+      p[i * 3 + 1] = (Math.random() - 0.5) * 15;
+      p[i * 3 + 2] = (Math.random() - 0.5) * 15;
+    }
+    return p;
+  }, [count]);
+
+  const ref = useRef<THREE.Points>(null!);
+  useFrame(() => {
+    if(ref.current) ref.current.rotation.y += 0.0005;
+  });
+
+  return (
+    <points ref={ref}>
+      <bufferGeometry>
+        <bufferAttribute attach="attributes-position" count={points.length / 3} array={points} itemSize={3} />
+      </bufferGeometry>
+      <pointsMaterial 
+        size={0.07} 
+        color="#4ade80" 
+        sizeAttenuation 
+        transparent 
+        opacity={0.8} 
+        blending={THREE.AdditiveBlending} 
+      />
+    </points>
+  );
+};
+
+const HackerBackground = () => (
+  <div className="fixed top-0 left-0 w-full h-full z-0 opacity-60 pointer-events-none">
+    <Suspense fallback={null}>
+      <Canvas camera={{ position: [0, 0, 6], fov: 60 }}>
+        <fog attach="fog" args={['#000000', 5, 15]} />
+        <ambientLight intensity={0.5} />
+        <RotatingCore />
+        <DataParticles />
+        <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
+      </Canvas>
+    </Suspense>
+  </div>
+);
+
+// --- 2. MAIN LOGIN COMPONENT ---
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -10,6 +89,7 @@ export default function Login() {
   const [isHovered, setIsHovered] = useState(false);
   const navigate = useNavigate();
 
+  // --- EXISTING LOGIC PRESERVED ---
   const login = async () => {
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({
@@ -35,90 +115,106 @@ export default function Login() {
     else alert('📩 Check your email for verification');
     setLoading(false);
   };
+  // --------------------------------
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-zinc-950 via-zinc-900 to-black relative overflow-hidden">
-      {/* Animated background orbs */}
-      <div className="absolute top-20 left-20 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl animate-pulse"></div>
-      <div className="absolute bottom-20 right-20 w-96 h-96 bg-emerald-600/5 rounded-full blur-3xl animate-pulse delay-700"></div>
+    <div className="min-h-screen flex items-center justify-center bg-[#050505] relative overflow-hidden font-mono text-green-400">
       
-      {/* Grid overlay */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.02)_1px,transparent_1px)] bg-[size:100px_100px]"></div>
+      {/* 3D Background */}
+      <HackerBackground />
+
+      {/* Grid Overlay */}
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(34,197,94,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(34,197,94,0.05)_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none"></div>
+      <div className="scanlines"></div>
 
       <div className="w-full max-w-md relative z-10 px-6">
-        {/* Glow effect container */}
-        <div className="relative group">
-          <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-500 rounded-2xl opacity-20 blur-xl group-hover:opacity-30 transition duration-1000"></div>
+        
+        {/* Cyber Card Container */}
+        <div className="relative group perspective-1000">
+           {/* Glow behind card */}
+          <div className="absolute -inset-1 bg-gradient-to-r from-green-600 to-green-900 rounded-lg blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
           
-          <div className="relative bg-zinc-900/90 backdrop-blur-2xl border border-zinc-800/50 rounded-2xl p-8 shadow-2xl">
-            {/* Header with icon */}
+          <div className="relative bg-black/80 backdrop-blur-md border border-green-500/30 rounded-lg p-8 shadow-2xl overflow-hidden">
+            
+            {/* Corner Tech Accents */}
+            <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-green-500/50"></div>
+            <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-green-500/50"></div>
+            <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-green-500/50"></div>
+            <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-green-500/50"></div>
+
+            {/* Header */}
             <div className="flex flex-col items-center mb-8">
-              <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-emerald-500/20 rotate-3 hover:rotate-0 transition-transform duration-300">
-                <Sparkles className="w-8 h-8 text-white" />
+              <div className="w-16 h-16 bg-green-900/20 rounded-lg flex items-center justify-center mb-4 border border-green-500/50 shadow-[0_0_15px_rgba(34,197,94,0.2)] group-hover:animate-pulse">
+                <Shield className="w-8 h-8 text-green-400" />
               </div>
               
-              <h2 className="text-3xl font-bold bg-gradient-to-r from-white via-emerald-100 to-white bg-clip-text text-transparent mb-2">
-                Welcome Back 👋
+              <h2 className="text-3xl font-black text-white tracking-tight mb-1 drop-shadow-[0_0_5px_rgba(34,197,94,0.5)]">
+                SYSTEM ACCESS
               </h2>
-              <p className="text-zinc-400 text-center">
-                Login or create your account
-              </p>
+              <div className="flex items-center gap-2 text-green-500/60 text-xs tracking-widest">
+                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                SECURE CONNECTION ESTABLISHED
+              </div>
             </div>
 
             {/* Email Input */}
-            <div className="mb-4">
-              <label className="text-sm text-zinc-400 font-medium flex items-center gap-2 mb-2">
-                <Mail className="w-4 h-4" />
-                Email
+            <div className="mb-6">
+              <label className="text-xs font-bold text-green-500 mb-2 flex items-center gap-2 tracking-wider">
+                <Terminal className="w-3 h-3" />
+                USER_IDENTITY
               </label>
-              <div className="relative group">
+              <div className="relative group/input">
                 <input
                   type="email"
-                  placeholder="you@example.com"
+                  placeholder="agent@cybergauntlet.io"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-zinc-800/50 text-white border border-zinc-700/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-300 placeholder:text-zinc-500"
+                  className="w-full px-4 py-3 bg-black/50 text-green-300 border border-green-500/30 rounded focus:outline-none focus:border-green-400 focus:ring-1 focus:ring-green-400/50 transition-all placeholder:text-green-900 font-mono"
                 />
-                <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-emerald-500/0 via-emerald-500/5 to-emerald-500/0 opacity-0 group-focus-within:opacity-100 transition-opacity pointer-events-none"></div>
+                <div className="absolute right-3 top-3 text-green-700 group-focus-within/input:text-green-400 transition-colors">
+                    <Mail className="w-5 h-5" />
+                </div>
               </div>
             </div>
 
             {/* Password Input */}
             <div className="mb-8">
-              <label className="text-sm text-zinc-400 font-medium flex items-center gap-2 mb-2">
-                <Lock className="w-4 h-4" />
-                Password
+              <label className="text-xs font-bold text-green-500 mb-2 flex items-center gap-2 tracking-wider">
+                <Cpu className="w-3 h-3" />
+                ACCESS_CODE
               </label>
-              <div className="relative group">
+              <div className="relative group/input">
                 <input
                   type="password"
-                  placeholder="••••••••"
+                  placeholder="••••••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-zinc-800/50 text-white border border-zinc-700/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-300 placeholder:text-zinc-500"
+                  className="w-full px-4 py-3 bg-black/50 text-green-300 border border-green-500/30 rounded focus:outline-none focus:border-green-400 focus:ring-1 focus:ring-green-400/50 transition-all placeholder:text-green-900 font-mono"
                 />
-                <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-emerald-500/0 via-emerald-500/5 to-emerald-500/0 opacity-0 group-focus-within:opacity-100 transition-opacity pointer-events-none"></div>
+                 <div className="absolute right-3 top-3 text-green-700 group-focus-within/input:text-green-400 transition-colors">
+                    <Lock className="w-5 h-5" />
+                </div>
               </div>
             </div>
 
             {/* Buttons */}
-            <div className="space-y-3">
+            <div className="space-y-4">
               <button
                 onClick={login}
                 disabled={loading}
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-black font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 group"
+                className="w-full py-3 bg-green-600 hover:bg-green-500 text-black font-bold text-sm tracking-wider uppercase rounded transition-all duration-300 hover:shadow-[0_0_20px_rgba(34,197,94,0.4)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 clip-path-polygon"
               >
                 {loading ? (
                   <>
-                    <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin"></div>
-                    Logging in...
+                    <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin"></div>
+                    AUTHENTICATING...
                   </>
                 ) : (
                   <>
-                    Login
-                    <ArrowRight className={`w-5 h-5 transition-transform duration-300 ${isHovered ? 'translate-x-1' : ''}`} />
+                    INITIATE SESSION
+                    <ArrowRight className={`w-4 h-4 transition-transform duration-300 ${isHovered ? 'translate-x-1' : ''}`} />
                   </>
                 )}
               </button>
@@ -126,19 +222,19 @@ export default function Login() {
               <button
                 onClick={signup}
                 disabled={loading}
-                className="w-full py-3 rounded-xl border border-zinc-700/50 text-white hover:bg-zinc-800/50 hover:border-emerald-500/50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed font-medium hover:scale-[1.02] active:scale-[0.98] relative overflow-hidden group"
+                className="w-full py-3 bg-transparent border border-green-500/30 text-green-500 hover:bg-green-500/10 hover:border-green-500 hover:text-green-400 font-bold text-sm tracking-wider uppercase rounded transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <span className="relative z-10">Create new account</span>
-                <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/0 via-emerald-500/10 to-emerald-500/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
+                REGISTER NEW OPERATIVE
               </button>
             </div>
 
-            {/* Decorative line */}
-            <div className="mt-8 pt-6 border-t border-zinc-800/50">
-              <p className="text-center text-xs text-zinc-500">
-                Secured with end-to-end encryption 🔒
+            {/* Footer */}
+            <div className="mt-8 pt-4 border-t border-green-500/20 text-center">
+              <p className="text-[10px] text-green-500/40 uppercase tracking-widest">
+                ENCRYPTION LEVEL: MILITARY GRADE // 2048-BIT
               </p>
             </div>
+
           </div>
         </div>
       </div>
