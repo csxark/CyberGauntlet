@@ -80,7 +80,7 @@ function AppRoutes() {
               }}
             />
           ) : (
-            <Navigate to="/login" replace />
+            <Navigate to="/auth" replace />
           )
         }
       />
