@@ -1,0 +1,1 @@
+- [x] Edit src/App.tsx to change the Navigate 'to' prop from "/login" to "/auth" in the challenges route
