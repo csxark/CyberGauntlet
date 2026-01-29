@@ -146,8 +146,11 @@ To contribute:
 2. Create a new branch for your changes `git checkout <feature-branch>`
 3. Make your changes following the project standards `git add <FILE>`
 4. Commit and push your changes to your fork 
-`git commit -m "<commit-message>"`
-`git push origin <feature-branch>`
+```bash 
+git commit -m "<commit-message>"
+git push origin <feature-branch>
+```
+
 5. Open a Pull Request for review
 
 By participating in this project, you agree to follow the Code of Conduct.
