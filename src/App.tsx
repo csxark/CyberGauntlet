@@ -8,6 +8,7 @@ import { Leaderboard } from './components/Leaderboard';
 
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import Profile from './pages/Profile';
 import ProtectedRoute from './pages/ProtectedRoute';
 
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -64,6 +65,16 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Protected profile */}
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <Profile />
           </ProtectedRoute>
         }
       />

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
 
@@ -91,6 +92,12 @@ export default function Dashboard() {
             </div>
 
             <div className="flex gap-3">
+              <Link
+                to="/profile"
+                className="px-5 py-2 rounded-xl font-semibold text-black bg-gradient-to-r from-cyan-400 to-blue-400 hover:brightness-110 active:scale-95 transition shadow-lg shadow-cyan-500/30"
+              >
+                Profile
+              </Link>
               <button
                 onClick={addPost}
                 className="px-5 py-2 rounded-xl font-semibold text-black bg-gradient-to-r from-emerald-400 to-cyan-400 hover:brightness-110 active:scale-95 transition shadow-lg shadow-emerald-500/30"
