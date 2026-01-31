@@ -1,10 +1,17 @@
-# Challenge Progress Tracking Enhancement
+# TODO: Enhance Hint System with Progressive Disclosure
 
-## Tasks
-- [ ] Add visual progress bar showing completion percentage
-- [ ] Add collapsible section with detailed breakdown of solved vs. unsolved challenges
-- [ ] Import necessary icons (ChevronDown, ChevronUp)
-- [ ] Add state for collapsible toggle
-- [ ] Implement dynamic updates for progress indicators
-- [ ] Test progress bar updates after challenge completion
-- [ ] Verify collapsible list accuracy
+## Database Migrations
+- [x] Create migration to add 'points' field to profiles table (default 100)
+- [x] Create migration to add 'hints_used' field to leaderboard table
+
+## Frontend Updates
+- [x] Update ChallengePage.tsx to fetch team points
+- [x] Add state for revealed hints and points
+- [x] Modify hints UI to show progressively (first free, others cost points)
+- [x] Implement point deduction on hint reveal
+- [x] Track hints used and update leaderboard submission
+
+## Testing
+- [ ] Test hint system functionality
+- [ ] Verify point deduction and leaderboard updates
+- [ ] Ensure progressive disclosure works as expected
