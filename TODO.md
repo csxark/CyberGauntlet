@@ -1,11 +1,10 @@
-# User Profile Management System Implementation
+# Challenge Progress Tracking Enhancement
 
 ## Tasks
-- [ ] Create Supabase migration for profiles table
-- [ ] Create Profile.tsx page component with form for editing profile
-- [ ] Add /profile route to App.tsx as protected route
-- [ ] Add Profile navigation link to Dashboard.tsx
-- [ ] Implement secure image upload to Supabase storage
-- [ ] Add input validation and error handling in Profile component
-- [ ] Update Leaderboard component to display profile data (optional)
-- [ ] Test profile creation, editing, and persistence
+- [ ] Add visual progress bar showing completion percentage
+- [ ] Add collapsible section with detailed breakdown of solved vs. unsolved challenges
+- [ ] Import necessary icons (ChevronDown, ChevronUp)
+- [ ] Add state for collapsible toggle
+- [ ] Implement dynamic updates for progress indicators
+- [ ] Test progress bar updates after challenge completion
+- [ ] Verify collapsible list accuracy

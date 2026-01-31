@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Download, Terminal, CheckCircle, XCircle, Clock, Trophy, LogOut } from 'lucide-react';
+import { Download, Terminal, CheckCircle, XCircle, Clock, Trophy, LogOut, ChevronDown, ChevronUp } from 'lucide-react';
 import { GlitchText } from './GlitchText';
 import { TerminalBox } from './TerminalBox';
 import { Leaderboard } from './Leaderboard';
@@ -109,6 +109,7 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
   const [isRunning, setIsRunning] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [completedQuestions, setCompletedQuestions] = useState<string[]>([]);
+  const [showProgressDetails, setShowProgressDetails] = useState(false);
 
   useEffect(() => {
     loadChallenge();
@@ -375,6 +376,59 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
             </div>
           </div>
         </header>
+
+        {/* Progress Bar and Details */}
+        <div className="mb-6">
+          <TerminalBox title="progress.sh">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="text-green-400 font-bold">
+                  Challenge Progress: {completedQuestions.length}/{SAMPLE_QUESTIONS.length}
+                </div>
+                <div className="text-green-300/60 text-sm">
+                  {Math.round((completedQuestions.length / SAMPLE_QUESTIONS.length) * 100)}% Complete
+                </div>
+              </div>
+              <div className="w-full bg-black/50 rounded-full h-4 border border-green-500/30">
+                <div
+                  className="bg-gradient-to-r from-green-500 to-green-400 h-4 rounded-full transition-all duration-500 ease-out"
+                  style={{ width: `${(completedQuestions.length / SAMPLE_QUESTIONS.length) * 100}%` }}
+                ></div>
+              </div>
+              <button
+                onClick={() => setShowProgressDetails(!showProgressDetails)}
+                className="flex items-center gap-2 text-green-400 hover:text-green-300 transition-colors text-sm"
+              >
+                {showProgressDetails ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                {showProgressDetails ? 'Hide' : 'Show'} Challenge Details
+              </button>
+              {showProgressDetails && (
+                <div className="space-y-2 mt-4 border-t border-green-500/20 pt-4">
+                  {SAMPLE_QUESTIONS.map((q) => {
+                    const isCompleted = completedQuestions.includes(q.id);
+                    return (
+                      <div key={q.id} className="flex items-center gap-3 p-2 rounded bg-black/20">
+                        {isCompleted ? (
+                          <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+                        ) : (
+                          <XCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+                        )}
+                        <div className="flex-1">
+                          <p className={`text-sm font-medium ${isCompleted ? 'text-green-400' : 'text-red-400'}`}>
+                            {q.title}
+                          </p>
+                          <p className="text-xs text-green-300/60">
+                            {isCompleted ? 'Completed' : 'Not Completed'}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </TerminalBox>
+        </div>
 
         {showLeaderboard && (
           <div className="mb-6">
