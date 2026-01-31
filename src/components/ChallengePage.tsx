@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Download, Terminal, CheckCircle, XCircle, Clock, Trophy, LogOut } from 'lucide-react';
+import { Download, Terminal, CheckCircle, XCircle, Clock, Trophy, LogOut, ChevronDown, ChevronUp } from 'lucide-react';
 import { GlitchText } from './GlitchText';
 import { TerminalBox } from './TerminalBox';
 import { Leaderboard } from './Leaderboard';
@@ -18,6 +18,7 @@ interface LocalChallenge {
   attempts: number;
   completed: boolean;
   completedTime?: number;
+  hintsUsed?: number;
 }
 
 interface Question {
@@ -109,6 +110,9 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
   const [isRunning, setIsRunning] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [completedQuestions, setCompletedQuestions] = useState<string[]>([]);
+  const [showProgressDetails, setShowProgressDetails] = useState(false);
+  const [points, setPoints] = useState(100);
+  const [revealedHints, setRevealedHints] = useState<number[]>([0]); // First hint always revealed
 
   useEffect(() => {
     loadChallenge();
@@ -133,11 +137,23 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
     };
   }, [isRunning, challenge, teamId]);
 
-  const loadChallenge = () => {
+  const loadChallenge = async () => {
     try {
       const saved = localStorage.getItem(`cybergauntlet_progress_${teamId}`);
       const completed = localStorage.getItem(`cybergauntlet_completed_${teamId}`);
       setCompletedQuestions(completed ? JSON.parse(completed) : []);
+
+      // Fetch team points
+      if (isSupabaseConfigured) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('points')
+          .eq('team_name', teamName)
+          .single();
+        if (profile) {
+          setPoints(profile.points);
+        }
+      }
 
       let localChallenge: LocalChallenge;
 
@@ -148,9 +164,11 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
           startedAt: parsed.startedAt,
           attempts: parsed.attempts,
           completed: parsed.completed,
-          completedTime: parsed.completedTime
+          completedTime: parsed.completedTime,
+          hintsUsed: parsed.hintsUsed || 0
         };
         setElapsedTime(parsed.elapsedTime || 0);
+        setRevealedHints(parsed.revealedHints || [0]);
       } else {
         const availableQuestions = SAMPLE_QUESTIONS.filter(q => !(completed ? JSON.parse(completed) : []).includes(q.id));
 
@@ -165,11 +183,13 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
           questionId: randomQuestion.id,
           startedAt: Date.now(),
           attempts: 0,
-          completed: false
+          completed: false,
+          hintsUsed: 0
         };
         localStorage.setItem(`cybergauntlet_progress_${teamId}`, JSON.stringify({
           ...localChallenge,
-          elapsedTime: 0
+          elapsedTime: 0,
+          revealedHints: [0]
         }));
       }
 
@@ -265,6 +285,43 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
     const mins = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
     return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const revealNextHint = async () => {
+    if (!question || !challenge) return;
+
+    const nextHintIndex = revealedHints.length;
+    if (nextHintIndex >= question.hints.length) return;
+
+    const cost = 10; // Cost per hint
+    if (points < cost) return;
+
+    const newPoints = points - cost;
+    const newRevealedHints = [...revealedHints, nextHintIndex];
+    const newHintsUsed = (challenge.hintsUsed || 0) + 1;
+
+    setPoints(newPoints);
+    setRevealedHints(newRevealedHints);
+
+    const updatedChallenge = {
+      ...challenge,
+      hintsUsed: newHintsUsed
+    };
+    setChallenge(updatedChallenge);
+
+    localStorage.setItem(`cybergauntlet_progress_${teamId}`, JSON.stringify({
+      ...updatedChallenge,
+      elapsedTime,
+      revealedHints: newRevealedHints
+    }));
+
+    // Update points in database
+    if (isSupabaseConfigured) {
+      await supabase
+        .from('profiles')
+        .update({ points: newPoints })
+        .eq('team_name', teamName);
+    }
   };
 
   // const loadLeaderboard = async () => {
@@ -376,6 +433,59 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
           </div>
         </header>
 
+        {/* Progress Bar and Details */}
+        <div className="mb-6">
+          <TerminalBox title="progress.sh">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="text-green-400 font-bold">
+                  Challenge Progress: {completedQuestions.length}/{SAMPLE_QUESTIONS.length}
+                </div>
+                <div className="text-green-300/60 text-sm">
+                  {Math.round((completedQuestions.length / SAMPLE_QUESTIONS.length) * 100)}% Complete
+                </div>
+              </div>
+              <div className="w-full bg-black/50 rounded-full h-4 border border-green-500/30">
+                <div
+                  className="bg-gradient-to-r from-green-500 to-green-400 h-4 rounded-full transition-all duration-500 ease-out"
+                  style={{ width: `${(completedQuestions.length / SAMPLE_QUESTIONS.length) * 100}%` }}
+                ></div>
+              </div>
+              <button
+                onClick={() => setShowProgressDetails(!showProgressDetails)}
+                className="flex items-center gap-2 text-green-400 hover:text-green-300 transition-colors text-sm"
+              >
+                {showProgressDetails ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                {showProgressDetails ? 'Hide' : 'Show'} Challenge Details
+              </button>
+              {showProgressDetails && (
+                <div className="space-y-2 mt-4 border-t border-green-500/20 pt-4">
+                  {SAMPLE_QUESTIONS.map((q) => {
+                    const isCompleted = completedQuestions.includes(q.id);
+                    return (
+                      <div key={q.id} className="flex items-center gap-3 p-2 rounded bg-black/20">
+                        {isCompleted ? (
+                          <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+                        ) : (
+                          <XCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+                        )}
+                        <div className="flex-1">
+                          <p className={`text-sm font-medium ${isCompleted ? 'text-green-400' : 'text-red-400'}`}>
+                            {q.title}
+                          </p>
+                          <p className="text-xs text-green-300/60">
+                            {isCompleted ? 'Completed' : 'Not Completed'}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </TerminalBox>
+        </div>
+
         {showLeaderboard && (
           <div className="mb-6">
             <Leaderboard currentTeamName={teamName} />
@@ -448,12 +558,22 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
               </div>
 
               <div className="border-t border-green-500/20 pt-4">
-                <h3 className="text-green-400 mb-2">HINTS:</h3>
+                <h3 className="text-green-400 mb-2">HINTS: ({revealedHints.length}/{question?.hints.length})</h3>
                 <ul className="space-y-1 text-green-300/60 ml-4 text-sm">
-                  {question?.hints.map((hint, idx) => (
-                    <li key={idx}>→ {hint}</li>
+                  {revealedHints.map((hintIndex) => (
+                    <li key={hintIndex}>→ {question?.hints[hintIndex]}</li>
                   ))}
                 </ul>
+                {revealedHints.length < (question?.hints.length || 0) && (
+                  <button
+                    onClick={revealNextHint}
+                    disabled={points < 10}
+                    className="mt-3 bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500 text-yellow-400 px-4 py-2 rounded transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                  >
+                    UNLOCK NEXT HINT (10 points)
+                  </button>
+                )}
+                <p className="text-green-300/40 text-xs mt-2">Points: {points}</p>
               </div>
             </div>
           </TerminalBox>
