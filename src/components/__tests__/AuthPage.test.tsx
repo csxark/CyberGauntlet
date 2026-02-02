@@ -48,7 +48,7 @@ describe('AuthPage', () => {
     
     await waitFor(() => {
       expect(mockOnAuth).toHaveBeenCalledWith(
-        'team3',
+        'parallax',
         'Parallax',
         'Madhav Agarwal'
       );
