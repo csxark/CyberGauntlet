@@ -48,3 +48,11 @@ CREATE POLICY "Allow public update to leaderboard"
 CREATE INDEX IF NOT EXISTS idx_leaderboard_team_name ON leaderboard(team_name);
 CREATE INDEX IF NOT EXISTS idx_leaderboard_question_id ON leaderboard(question_id);
 CREATE INDEX IF NOT EXISTS idx_leaderboard_completed_at ON leaderboard(completed_at);
+
+
+
+
+
+
+
+
