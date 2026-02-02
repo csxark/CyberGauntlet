@@ -175,13 +175,16 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 |        └───📄 Objective.png
 |   ├───📄 ADMIN_SETUP.md
 |   ├───📄 CODE_OF_CONDUCT.md
-|   ├───📄 Contributing.md
+|   ├───📄 Contributor.md
 |   ├───📄 LEADERBOARD.md
 |   └───📄 LEADERBOARD_IMPLEMENTATION.md
 ├───📁 Json/
 |   ├───📄 index.html
+|   ├───📄 package-lock.json
+|   ├───📄 package.json
+|   ├───📄 tsconfig.app.json
 |   ├───📄 tsconfig.json
-|   └───📄 ... (4 more .json files)
+|   └───📄 tsconfig.node.json
 ├───📁 public/
 │   └───📁 challenges/
 │       ├───📁 q1/
@@ -193,22 +196,23 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 |           └───📄 secretnote.txt
 └───📁 src/
     ├───📁 components/
-    |   ├───📄 ChallangePage.tsx
+    |   ├───📄 ChallengePage.tsx
     |   ├───📄 DocsPage.tsx
-    |   ├───📄 GlitchPage.tsx
-    |   ├───📄 Landingpage.tsx
+    |   ├───📄 GlitchText.tsx
+    |   ├───📄 LandingPage.tsx
     |   ├───📄 Leaderboard.tsx
-    |   └───📄 Terminalbox.tsx
+    |   └───📄 TerminalBox.tsx
     ├───📁 context/
-    |   └───📄 AuthContent.tsx
+    |   └───📄 AuthContext.tsx
     ├───📁 data/
     |   └───📄 teamData.ts
     ├───📁 lib/
     |   └───📄 supabase.ts
     └───📁 pages/
     |   ├───📄 Dashboard.tsx
-    |   ├───📄 LeaderBoardPage.tsx
+    |   ├───📄 LeaderboardPage.tsx
     |   ├───📄 Login.tsx
+    |   ├───📄 Profile.tsx
     |   └───📄 ProtectedRoute.tsx
     ├───📄 App.tsx
     ├───📄 index.css
