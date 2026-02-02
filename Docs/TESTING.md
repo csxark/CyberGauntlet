@@ -61,10 +61,10 @@ describe('MyComponent', () => {
   it('should handle user interaction', async () => {
     const user = userEvent.setup();
     render(<MyComponent />);
-    
+
     const button = screen.getByRole('button');
     await user.click(button);
-    
+
     expect(screen.getByText('Clicked')).toBeInTheDocument();
   });
 });
@@ -73,18 +73,18 @@ describe('MyComponent', () => {
 ### Unit Testing Example
 
 ```typescript
-import { describe, it, expect } from 'vitest';
-import { validateTeam } from '../teamData';
+import { describe, it, expect } from "vitest";
+import { validateTeam } from "../teamData";
 
-describe('validateTeam', () => {
-  it('should validate correct credentials', () => {
-    const result = validateTeam('Parallax', 'Madhav Agarwal');
+describe("validateTeam", () => {
+  it("should validate correct credentials", () => {
+    const result = validateTeam("Parallax", "Madhav Agarwal");
     expect(result).not.toBeNull();
-    expect(result?.id).toBe('Parallax');
+    expect(result?.id).toBe("Parallax");
   });
 
-  it('should return null for invalid credentials', () => {
-    const result = validateTeam('Invalid', 'Invalid');
+  it("should return null for invalid credentials", () => {
+    const result = validateTeam("Invalid", "Invalid");
     expect(result).toBeNull();
   });
 });
@@ -99,6 +99,7 @@ npm run test:coverage
 ```
 
 Coverage reports are generated in the `coverage/` directory:
+
 - `coverage/index.html` - HTML report (open in browser)
 - `coverage/lcov.info` - LCOV format (for CI tools)
 
@@ -112,6 +113,7 @@ Coverage reports are generated in the `coverage/` directory:
 ## CI/CD Integration
 
 Tests run automatically on:
+
 - Push to `main` or `feature-and-fixes` branches
 - Pull requests to `main`
 
@@ -122,16 +124,18 @@ See `.github/workflows/ci.yml` for configuration.
 ### 1. Test Behavior, Not Implementation
 
 ✅ **Good:**
+
 ```typescript
-it('should show error for invalid credentials', async () => {
+it("should show error for invalid credentials", async () => {
   // ...
   expect(screen.getByText(/invalid/i)).toBeInTheDocument();
 });
 ```
 
 ❌ **Bad:**
+
 ```typescript
-it('should set error state to true', () => {
+it("should set error state to true", () => {
   // Testing internal state
 });
 ```
@@ -139,13 +143,15 @@ it('should set error state to true', () => {
 ### 2. Use Descriptive Test Names
 
 ✅ **Good:**
+
 ```typescript
-it('should disable submit button during loading')
+it("should disable submit button during loading");
 ```
 
 ❌ **Bad:**
+
 ```typescript
-it('test button')
+it("test button");
 ```
 
 ### 3. Follow AAA Pattern
@@ -155,14 +161,14 @@ it('test button')
 - **Assert**: Verify result
 
 ```typescript
-it('should validate team credentials', () => {
+it("should validate team credentials", () => {
   // Arrange
-  const teamName = 'Parallax';
-  const leaderName = 'Madhav Agarwal';
-  
+  const teamName = "Parallax";
+  const leaderName = "Madhav Agarwal";
+
   // Act
   const result = validateTeam(teamName, leaderName);
-  
+
   // Assert
   expect(result).not.toBeNull();
 });
@@ -187,7 +193,7 @@ it('should validate team credentials', () => {
 ### Mock Functions
 
 ```typescript
-import { vi } from 'vitest';
+import { vi } from "vitest";
 
 const mockCallback = vi.fn();
 ```
@@ -195,7 +201,7 @@ const mockCallback = vi.fn();
 ### Mock Modules
 
 ```typescript
-vi.mock('../lib/supabase', () => ({
+vi.mock("../lib/supabase", () => ({
   supabase: {
     from: vi.fn(() => ({
       select: vi.fn(() => Promise.resolve({ data: [], error: null })),
@@ -223,6 +229,7 @@ npm run test:ui
 ```
 
 This opens an interactive UI where you can:
+
 - View test results
 - Debug failing tests
 - See coverage in real-time
@@ -249,7 +256,7 @@ Add to `.vscode/launch.json`:
 **Solution**: Ensure `@testing-library/jest-dom` is imported in setup:
 
 ```typescript
-import * as matchers from '@testing-library/jest-dom/matchers';
+import * as matchers from "@testing-library/jest-dom/matchers";
 expect.extend(matchers);
 ```
 
@@ -258,9 +265,13 @@ expect.extend(matchers);
 **Solution**: Increase timeout in test:
 
 ```typescript
-it('slow test', async () => {
-  // ...
-}, { timeout: 10000 });
+it(
+  "slow test",
+  async () => {
+    // ...
+  },
+  { timeout: 10000 },
+);
 ```
 
 ### Issue: Async operations not completing
@@ -268,10 +279,10 @@ it('slow test', async () => {
 **Solution**: Use `waitFor`:
 
 ```typescript
-import { waitFor } from '@testing-library/react';
+import { waitFor } from "@testing-library/react";
 
 await waitFor(() => {
-  expect(screen.getByText('Done')).toBeInTheDocument();
+  expect(screen.getByText("Done")).toBeInTheDocument();
 });
 ```
 
@@ -284,6 +295,7 @@ await waitFor(() => {
 ## Contributing
 
 When adding new features:
+
 1. Write tests first (TDD)
 2. Aim for 80%+ coverage
 3. Test edge cases
