@@ -15,13 +15,14 @@ interface TeamScore {
   challenges_completed: number;
   last_completed: string;
   best_time?: number;
+  total_points: number;
 }
 
 export function Leaderboard({ currentTeamName, questionFilter }: LeaderboardProps) {
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [teamScores, setTeamScores] = useState<TeamScore[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sortBy, setSortBy] = useState<'time' | 'completed'>('completed');
+  const [sortBy, setSortBy] = useState<'time' | 'completed' | 'points'>('points');
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -79,6 +80,7 @@ export function Leaderboard({ currentTeamName, questionFilter }: LeaderboardProp
             existing.total_time += entry.time_spent;
             existing.total_attempts += entry.attempts;
             existing.challenges_completed += 1;
+            existing.total_points += entry.points || 0;
             if (entry.completed_at && entry.completed_at > existing.last_completed) {
               existing.last_completed = entry.completed_at;
             }
@@ -93,6 +95,7 @@ export function Leaderboard({ currentTeamName, questionFilter }: LeaderboardProp
               challenges_completed: 1,
               last_completed: entry.completed_at || new Date().toISOString(),
               best_time: entry.time_spent,
+              total_points: entry.points || 0,
             });
           }
         });
@@ -123,14 +126,17 @@ export function Leaderboard({ currentTeamName, questionFilter }: LeaderboardProp
 
   const sortedTeams = [...teamScores].sort((a, b) => {
     if (sortBy === 'completed') {
-      // Sort by challenges completed (desc), then by total time (asc)
+      // Sort by challenges completed (desc), then by total points (desc)
       if (b.challenges_completed !== a.challenges_completed) {
         return b.challenges_completed - a.challenges_completed;
       }
-      return a.total_time - b.total_time;
-    } else {
+      return b.total_points - a.total_points;
+    } else if (sortBy === 'time') {
       // Sort by total time (asc)
       return a.total_time - b.total_time;
+    } else {
+      // Sort by total points (desc)
+      return b.total_points - a.total_points;
     }
   });
 
@@ -208,6 +214,16 @@ export function Leaderboard({ currentTeamName, questionFilter }: LeaderboardProp
             >
               Speed
             </button>
+            <button
+              onClick={() => setSortBy('points')}
+              className={`px-2 py-1 rounded transition-colors ${
+                sortBy === 'points'
+                  ? 'bg-green-500/20 text-green-400 border border-green-500'
+                  : 'text-green-300/60 hover:text-green-400'
+              }`}
+            >
+              Points
+            </button>
           </div>
         </div>
 
@@ -270,15 +286,13 @@ export function Leaderboard({ currentTeamName, questionFilter }: LeaderboardProp
                 {/* Stats */}
                 <div className="text-right">
                   <div className="flex items-center gap-1 justify-end text-green-400 font-mono text-sm">
-                    <Clock className="w-4 h-4" />
+                    <Trophy className="w-4 h-4" />
+                    <span>{team.total_points} pts</span>
+                  </div>
+                  <div className="flex items-center gap-1 justify-end text-green-300/60 text-xs mt-1">
+                    <Clock className="w-3 h-3" />
                     <span>{formatTime(team.total_time)}</span>
                   </div>
-                  {team.best_time && (
-                    <div className="flex items-center gap-1 justify-end text-green-300/60 text-xs mt-1">
-                      <TrendingUp className="w-3 h-3" />
-                      <span>Best: {formatTime(team.best_time)}</span>
-                    </div>
-                  )}
                 </div>
               </div>
             );
