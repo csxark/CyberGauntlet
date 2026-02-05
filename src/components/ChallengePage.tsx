@@ -255,11 +255,20 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
         localStorage.setItem(`cybergauntlet_completed_${teamId}`, JSON.stringify(newCompleted));
 
         if (isSupabaseConfigured) {
+          // Calculate points: base 100 + time bonus (faster = more bonus)
+          const basePoints = 100;
+          const timeBonus = completedTime < 300 ? 50 : completedTime < 600 ? 25 : 0;
+          const totalPoints = basePoints + timeBonus;
+
           await supabase.from('leaderboard').insert({
             team_name: teamName,
             question_id: question.id,
             time_spent: completedTime,
             attempts: newAttempts,
+            hints_used: challenge.hintsUsed || 0,
+            start_time: new Date(challenge.startedAt).toISOString(),
+            completion_time: new Date().toISOString(),
+            points: totalPoints,
             completed_at: new Date().toISOString()
           });
         }
