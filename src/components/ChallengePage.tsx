@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Download, Terminal, CheckCircle, XCircle, Clock, Trophy, LogOut, ChevronDown, ChevronUp } from 'lucide-react';
+import { Download, Terminal, CheckCircle, XCircle, Clock, Trophy, LogOut, ChevronDown, ChevronUp, Users, MessageSquare } from 'lucide-react';
 import { GlitchText } from './GlitchText';
 import { TerminalBox } from './TerminalBox';
 import { Leaderboard } from './Leaderboard';
