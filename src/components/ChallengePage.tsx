@@ -217,55 +217,78 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
 
     const newAttempts = challenge.attempts + 1;
 
-    if (flag.trim() === question.correct_flag) {
-      setResult('correct');
-      setIsRunning(false);
+    try {
+      // Call server-side validation
+      const { data, error } = await supabase.functions.invoke('validate-flag', {
+        body: {
+          challenge_id: question.id,
+          submitted_flag: flag.trim(),
+          team_name: teamName
+        }
+      });
 
-      const completedTime = elapsedTime;
-      const updatedChallenge = {
-        ...challenge,
-        completed: true,
-        completedTime,
-        attempts: newAttempts
-      };
-
-      localStorage.setItem(`cybergauntlet_progress_${teamId}`, JSON.stringify({
-        ...updatedChallenge,
-        elapsedTime: completedTime
-      }));
-
-      const newCompleted = [...completedQuestions, question.id];
-      localStorage.setItem(`cybergauntlet_completed_${teamId}`, JSON.stringify(newCompleted));
-
-      if (isSupabaseConfigured) {
-        await supabase.from('leaderboard').insert({
-          team_name: teamName,
-          question_id: question.id,
-          time_spent: completedTime,
-          attempts: newAttempts,
-          completed_at: new Date().toISOString()
-        });
+      if (error) {
+        console.error('Validation error:', error);
+        setResult('incorrect');
+        setTimeout(() => setResult(null), 3000);
+        return;
       }
 
-      setChallenge(updatedChallenge);
-      setCompletedQuestions(newCompleted);
-      setFlag('');
+      if (data.is_correct) {
+        setResult('correct');
+        setIsRunning(false);
 
-      setTimeout(() => {
-        if (newCompleted.length < SAMPLE_QUESTIONS.length) {
-          localStorage.removeItem(`cybergauntlet_progress_${teamId}`);
-          loadChallenge();
-          setResult(null);
+        const completedTime = elapsedTime;
+        const updatedChallenge = {
+          ...challenge,
+          completed: true,
+          completedTime,
+          attempts: newAttempts
+        };
+
+        localStorage.setItem(`cybergauntlet_progress_${teamId}`, JSON.stringify({
+          ...updatedChallenge,
+          elapsedTime: completedTime
+        }));
+
+        const newCompleted = [...completedQuestions, question.id];
+        localStorage.setItem(`cybergauntlet_completed_${teamId}`, JSON.stringify(newCompleted));
+
+        if (isSupabaseConfigured) {
+          await supabase.from('leaderboard').insert({
+            team_name: teamName,
+            question_id: question.id,
+            time_spent: completedTime,
+            attempts: newAttempts,
+            completed_at: new Date().toISOString()
+          });
         }
-      }, 3000);
-    } else {
+
+        setChallenge(updatedChallenge);
+        setCompletedQuestions(newCompleted);
+        setFlag('');
+
+        setTimeout(() => {
+          if (newCompleted.length < SAMPLE_QUESTIONS.length) {
+            localStorage.removeItem(`cybergauntlet_progress_${teamId}`);
+            loadChallenge();
+            setResult(null);
+          }
+        }, 3000);
+      } else {
+        // Handle different types of incorrect responses
+        setResult(data.status || 'incorrect');
+        const updatedChallenge = { ...challenge, attempts: newAttempts };
+        setChallenge(updatedChallenge);
+        localStorage.setItem(`cybergauntlet_progress_${teamId}`, JSON.stringify({
+          ...updatedChallenge,
+          elapsedTime
+        }));
+        setTimeout(() => setResult(null), 3000);
+      }
+    } catch (err) {
+      console.error('Error submitting flag:', err);
       setResult('incorrect');
-      const updatedChallenge = { ...challenge, attempts: newAttempts };
-      setChallenge(updatedChallenge);
-      localStorage.setItem(`cybergauntlet_progress_${teamId}`, JSON.stringify({
-        ...updatedChallenge,
-        elapsedTime
-      }));
       setTimeout(() => setResult(null), 3000);
     }
   };
