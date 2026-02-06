@@ -79,6 +79,20 @@ function AppRoutes() {
         }
       />
 
+      {/* Protected admin dashboard */}
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute>
+            <AdminDashboard
+              onLogout={async () => {
+                await supabase.auth.signOut();
+              }}
+            />
+          </ProtectedRoute>
+        }
+      />
+
       {/* Protected challenges */}
       <Route
         path="/challenges"
