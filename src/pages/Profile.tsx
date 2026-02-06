@@ -26,6 +26,19 @@ export default function Profile() {
     profile_picture: null as File | null,
   });
 
+  // Challenge submission state
+  const [showSubmissionForm, setShowSubmissionForm] = useState(false);
+  const [submissionData, setSubmissionData] = useState({
+    title: '',
+    description: '',
+    category: '',
+    difficulty: '',
+    correct_flag: '',
+    hints: [''],
+    assets: [] as File[],
+  });
+  const [submitting, setSubmitting] = useState(false);
+
   useEffect(() => {
     fetchProfile();
   }, [user]);
@@ -81,6 +94,108 @@ export default function Profile() {
       .getPublicUrl(filePath);
 
     return data.publicUrl;
+  };
+
+  // Challenge submission handlers
+  const handleSubmissionInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setSubmissionData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleHintChange = (index: number, value: string) => {
+    const newHints = [...submissionData.hints];
+    newHints[index] = value;
+    setSubmissionData(prev => ({ ...prev, hints: newHints }));
+  };
+
+  const addHint = () => {
+    setSubmissionData(prev => ({ ...prev, hints: [...prev.hints, ''] }));
+  };
+
+  const removeHint = (index: number) => {
+    const newHints = submissionData.hints.filter((_, i) => i !== index);
+    setSubmissionData(prev => ({ ...prev, hints: newHints }));
+  };
+
+  const handleAssetChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    setSubmissionData(prev => ({ ...prev, assets: files }));
+  };
+
+  const uploadAssets = async (files: File[]): Promise<string[]> => {
+    const uploadedPaths: string[] = [];
+
+    for (const file of files) {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `challenge_assets/${user!.id}_${Date.now()}_${file.name}`;
+      const filePath = fileName;
+
+      const { error: uploadError } = await supabase.storage
+        .from('challenges')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      const { data } = supabase.storage
+        .from('challenges')
+        .getPublicUrl(filePath);
+
+      uploadedPaths.push(data.publicUrl);
+    }
+
+    return uploadedPaths;
+  };
+
+  const handleSubmissionSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !profile) return;
+
+    setSubmitting(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      let assetUrls: string[] = [];
+
+      if (submissionData.assets.length > 0) {
+        assetUrls = await uploadAssets(submissionData.assets);
+      }
+
+      const submission = {
+        submitter_id: profile.id,
+        title: submissionData.title,
+        description: submissionData.description,
+        category: submissionData.category,
+        difficulty: submissionData.difficulty,
+        correct_flag: submissionData.correct_flag,
+        hints: submissionData.hints.filter(hint => hint.trim() !== ''),
+        assets: assetUrls,
+      };
+
+      const { error } = await supabase
+        .from('challenge_submissions')
+        .insert(submission);
+
+      if (error) throw error;
+
+      setSuccess('Challenge submitted successfully! It will be reviewed by admins.');
+      setSubmissionData({
+        title: '',
+        description: '',
+        category: '',
+        difficulty: '',
+        correct_flag: '',
+        hints: [''],
+        assets: [],
+      });
+      setShowSubmissionForm(false);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -239,6 +354,179 @@ export default function Profile() {
             </div>
           </div>
         </form>
+
+        {/* Challenge Submission Section */}
+        <div className="mt-8">
+          <div className="relative rounded-2xl border border-zinc-800 bg-zinc-900/70 backdrop-blur-xl p-6">
+            <div className="absolute inset-0 rounded-2xl opacity-0 hover:opacity-100 transition bg-gradient-to-r from-emerald-500/5 to-cyan-500/5" />
+            <div className="relative">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h2 className="text-2xl font-bold text-zinc-100">Submit Challenge</h2>
+                  <p className="text-zinc-400 text-sm">Contribute to the community challenge pool</p>
+                </div>
+                <button
+                  onClick={() => setShowSubmissionForm(!showSubmissionForm)}
+                  className="px-4 py-2 rounded-lg font-semibold text-black bg-gradient-to-r from-emerald-400 to-cyan-400 hover:brightness-110 transition"
+                >
+                  {showSubmissionForm ? 'Cancel' : 'Submit Challenge'}
+                </button>
+              </div>
+
+              {showSubmissionForm && (
+                <form onSubmit={handleSubmissionSubmit} className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label htmlFor="title" className="block text-sm font-medium text-zinc-300 mb-2">
+                        Challenge Title
+                      </label>
+                      <input
+                        type="text"
+                        id="title"
+                        name="title"
+                        value={submissionData.title}
+                        onChange={handleSubmissionInputChange}
+                        required
+                        className="w-full px-4 py-3 rounded-xl border border-zinc-700 bg-zinc-800/50 text-white placeholder-zinc-500 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition"
+                        placeholder="Enter challenge title"
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="category" className="block text-sm font-medium text-zinc-300 mb-2">
+                        Category
+                      </label>
+                      <select
+                        id="category"
+                        name="category"
+                        value={submissionData.category}
+                        onChange={handleSubmissionInputChange}
+                        required
+                        className="w-full px-4 py-3 rounded-xl border border-zinc-700 bg-zinc-800/50 text-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition"
+                      >
+                        <option value="">Select category</option>
+                        <option value="Cryptography">Cryptography</option>
+                        <option value="Programming">Programming</option>
+                        <option value="Steganography">Steganography</option>
+                        <option value="Web Security">Web Security</option>
+                        <option value="Forensics">Forensics</option>
+                        <option value="Reverse Engineering">Reverse Engineering</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label htmlFor="difficulty" className="block text-sm font-medium text-zinc-300 mb-2">
+                        Difficulty
+                      </label>
+                      <select
+                        id="difficulty"
+                        name="difficulty"
+                        value={submissionData.difficulty}
+                        onChange={handleSubmissionInputChange}
+                        required
+                        className="w-full px-4 py-3 rounded-xl border border-zinc-700 bg-zinc-800/50 text-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition"
+                      >
+                        <option value="">Select difficulty</option>
+                        <option value="Beginner">Beginner</option>
+                        <option value="Intermediate">Intermediate</option>
+                        <option value="Advanced">Advanced</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label htmlFor="correct_flag" className="block text-sm font-medium text-zinc-300 mb-2">
+                        Correct Flag
+                      </label>
+                      <input
+                        type="text"
+                        id="correct_flag"
+                        name="correct_flag"
+                        value={submissionData.correct_flag}
+                        onChange={handleSubmissionInputChange}
+                        required
+                        className="w-full px-4 py-3 rounded-xl border border-zinc-700 bg-zinc-800/50 text-white placeholder-zinc-500 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition"
+                        placeholder="CG{...}"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="description" className="block text-sm font-medium text-zinc-300 mb-2">
+                      Challenge Description
+                    </label>
+                    <textarea
+                      id="description"
+                      name="description"
+                      value={submissionData.description}
+                      onChange={handleSubmissionInputChange}
+                      required
+                      rows={4}
+                      className="w-full px-4 py-3 rounded-xl border border-zinc-700 bg-zinc-800/50 text-white placeholder-zinc-500 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition"
+                      placeholder="Describe the challenge scenario and requirements..."
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-zinc-300 mb-2">
+                      Hints
+                    </label>
+                    {submissionData.hints.map((hint, index) => (
+                      <div key={index} className="flex gap-2 mb-2">
+                        <input
+                          type="text"
+                          value={hint}
+                          onChange={(e) => handleHintChange(index, e.target.value)}
+                          className="flex-1 px-4 py-2 rounded-lg border border-zinc-700 bg-zinc-800/50 text-white placeholder-zinc-500 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition"
+                          placeholder={`Hint ${index + 1}`}
+                        />
+                        {submissionData.hints.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeHint(index)}
+                            className="px-3 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500 text-red-400 rounded-lg transition"
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={addHint}
+                      className="px-4 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500 text-emerald-400 rounded-lg transition"
+                    >
+                      Add Hint
+                    </button>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-zinc-300 mb-2">
+                      Challenge Assets (optional)
+                    </label>
+                    <input
+                      type="file"
+                      multiple
+                      accept="*/*"
+                      onChange={handleAssetChange}
+                      className="block w-full text-sm text-zinc-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-emerald-500 file:text-black hover:file:bg-emerald-400"
+                    />
+                    <p className="text-xs text-zinc-500 mt-1">
+                      Upload any files needed for the challenge (images, binaries, etc.)
+                    </p>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="w-full px-6 py-3 rounded-xl font-semibold text-black bg-gradient-to-r from-emerald-400 to-cyan-400 hover:brightness-110 active:scale-95 transition shadow-lg shadow-emerald-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {submitting ? 'Submitting...' : 'Submit Challenge'}
+                  </button>
+                </form>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
