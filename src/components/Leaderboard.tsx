@@ -23,6 +23,8 @@ export function Leaderboard({ currentTeamName, questionFilter }: LeaderboardProp
   const [teamScores, setTeamScores] = useState<TeamScore[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState<'time' | 'completed' | 'points'>('points');
+  const [categoryFilter, setCategoryFilter] = useState<string>('');
+  const [difficultyFilter, setDifficultyFilter] = useState<string>('');
 
   useEffect(() => {
     if (!isSupabaseConfigured) {

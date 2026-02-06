@@ -29,6 +29,8 @@ interface Question {
   file_path: string;
   correct_flag: string;
   hints: string[];
+  category: string;
+  difficulty: string;
 }
 
 const SAMPLE_QUESTIONS: Question[] = [
@@ -44,7 +46,9 @@ description: "You are a cybersecurity consultant investigating a breach at the M
     file_name: "cipher_collection.txt",
     file_path: "/challenges/q1/cipher_collection.txt",
     correct_flag: "CG{Guvf vf gur Synt!}",
-    hints: ["This code is based on a simple rotational shift of 3 for every letter in the alphabet", "This message is encoded using Polybius square coordinates; you must first group the ciphertext by fives, then use a keyword to untangle the column order.","The decryption key for this substitution is half the alphabet, meaning the shift applied to the ciphertext is equal to the length of the shift itself."]
+    hints: ["This code is based on a simple rotational shift of 3 for every letter in the alphabet", "This message is encoded using Polybius square coordinates; you must first group the ciphertext by fives, then use a keyword to untangle the column order.","The decryption key for this substitution is half the alphabet, meaning the shift applied to the ciphertext is equal to the length of the shift itself."],
+    category: "Cryptography",
+    difficulty: "Intermediate"
   },
   {
     "id": "q2",
@@ -57,7 +61,9 @@ description: "You are a cybersecurity consultant investigating a breach at the M
       " Since the array is sorted, set one marker (a pointer) at the first element (index 0) and the second marker at the last element (index length - 1).",
       " At each step, you only need to calculate the sum of the elements at your two markers and compare it to T. If the sum is less than T, you must increase the sum, so move the low pointer one step inward. If the sum is greater than T, you must decrease the sum, so move the high pointer one step inward.",
       " Your entire solution can be contained within a simple while loop that continues as long as your low pointer is less than your high pointer."
-    ]
+    ],
+    "category": "Programming",
+    "difficulty": "Beginner"
   },
   {
     "id": "q3",
@@ -70,7 +76,9 @@ description: "You are a cybersecurity consultant investigating a breach at the M
       "Swap the two halves — The key is split (A1B2C and 3D4E5) and exchanged.",
       "Reverse the new first half in place — after swapping, reverse indices 0 through 4.",
       "The flag is the final state of the key array after processing."
-    ]
+    ],
+    "category": "Programming",
+    "difficulty": "Intermediate"
   },
   {
     "id": "q4",
@@ -83,7 +91,9 @@ description: "You are a cybersecurity consultant investigating a breach at the M
       "Zero-width characters (U200B, U200D) represent binary digits and encode ASCII via invisible text.",
       "Use a specialized tool to extract and translate the invisible Unicode sequence.",
       "Correct mapping from invisible characters to binary unlocks the true ASCII flag."
-    ]
+    ],
+    "category": "Steganography",
+    "difficulty": "Advanced"
   },
 {
   "id": "q5",
@@ -96,7 +106,9 @@ description: "You are a cybersecurity consultant investigating a breach at the M
     "Each three-digit number represents a character in the ASCII range",
     "Convert each quinary number to decimal using powers of 5",
     "Map the resulting decimal values to ASCII characters"
-  ]
+  ],
+  "category": "Cryptography",
+  "difficulty": "Advanced"
 }
 ];
 
@@ -269,7 +281,9 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
             start_time: new Date(challenge.startedAt).toISOString(),
             completion_time: new Date().toISOString(),
             points: totalPoints,
-            completed_at: new Date().toISOString()
+            completed_at: new Date().toISOString(),
+            category: question.category,
+            difficulty: question.difficulty
           });
         }
 
@@ -506,7 +520,7 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
                             {q.title}
                           </p>
                           <p className="text-xs text-green-300/60">
-                            {isCompleted ? 'Completed' : 'Not Completed'}
+                            {q.category} • {q.difficulty} • {isCompleted ? 'Completed' : 'Not Completed'}
                           </p>
                         </div>
                       </div>

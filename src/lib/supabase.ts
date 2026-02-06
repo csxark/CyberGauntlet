@@ -35,4 +35,6 @@ export interface LeaderboardEntry {
   attempts: number;
   completed_at: string | null;
   created_at: string;
+  category?: string;
+  difficulty?: string;
 }
