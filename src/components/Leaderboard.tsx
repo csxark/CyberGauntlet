@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Trophy, Clock, Target, TrendingUp, Award } from 'lucide-react';
+import { Trophy, Clock, Target, TrendingUp, TrendingDown, Award } from 'lucide-react';
 import { supabase, isSupabaseConfigured, LeaderboardEntry } from '../lib/supabase';
 import { TerminalBox } from './TerminalBox';
 
@@ -18,6 +18,8 @@ interface TeamScore {
   total_points: number;
 }
 
+type RankChange = 'up' | 'down' | 'same';
+
 export function Leaderboard({ currentTeamName, questionFilter }: LeaderboardProps) {
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [teamScores, setTeamScores] = useState<TeamScore[]>([]);
@@ -25,6 +27,8 @@ export function Leaderboard({ currentTeamName, questionFilter }: LeaderboardProp
   const [sortBy, setSortBy] = useState<'time' | 'completed' | 'points'>('points');
   const [categoryFilter, setCategoryFilter] = useState<string>('');
   const [difficultyFilter, setDifficultyFilter] = useState<string>('');
+  const [previousRanks, setPreviousRanks] = useState<Map<string, number>>(new Map());
+  const [rankChanges, setRankChanges] = useState<Map<string, RankChange>>(new Map());
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -104,6 +108,36 @@ export function Leaderboard({ currentTeamName, questionFilter }: LeaderboardProp
 
         const scores = Array.from(teamMap.values());
         setTeamScores(scores);
+
+        // Calculate rank changes for visual indicators
+        const newRanks = new Map<string, number>();
+        const newRankChanges = new Map<string, RankChange>();
+
+        sortedTeams.forEach((team, idx) => {
+          const newRank = idx + 1;
+          newRanks.set(team.team_name, newRank);
+
+          const prevRank = previousRanks.get(team.team_name);
+          if (prevRank !== undefined) {
+            if (newRank < prevRank) {
+              newRankChanges.set(team.team_name, 'up');
+            } else if (newRank > prevRank) {
+              newRankChanges.set(team.team_name, 'down');
+            } else {
+              newRankChanges.set(team.team_name, 'same');
+            }
+          } else {
+            newRankChanges.set(team.team_name, 'same');
+          }
+        });
+
+        setPreviousRanks(newRanks);
+        setRankChanges(newRankChanges);
+
+        // Clear rank changes after 3 seconds to stop animations
+        setTimeout(() => {
+          setRankChanges(new Map());
+        }, 3000);
       }
 
       setLoading(false);
@@ -247,7 +281,7 @@ export function Leaderboard({ currentTeamName, questionFilter }: LeaderboardProp
                 <div className="flex items-center gap-3 flex-1">
                   {/* Rank badge */}
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold relative ${
                       rank === 1
                         ? 'bg-yellow-500 text-black'
                         : rank === 2
@@ -255,9 +289,21 @@ export function Leaderboard({ currentTeamName, questionFilter }: LeaderboardProp
                         : rank === 3
                         ? 'bg-orange-600 text-white'
                         : 'bg-green-500/20 text-green-400'
+                    } ${
+                      rankChanges.get(team.team_name) === 'up'
+                        ? 'animate-pulse ring-2 ring-green-400'
+                        : rankChanges.get(team.team_name) === 'down'
+                        ? 'animate-pulse ring-2 ring-red-400'
+                        : ''
                     }`}
                   >
                     {rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank}
+                    {rankChanges.get(team.team_name) === 'up' && (
+                      <TrendingUp className="w-3 h-3 absolute -top-1 -right-1 text-green-400" />
+                    )}
+                    {rankChanges.get(team.team_name) === 'down' && (
+                      <TrendingDown className="w-3 h-3 absolute -top-1 -right-1 text-red-400" />
+                    )}
                   </div>
 
                   {/* Team info */}
