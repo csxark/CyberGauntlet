@@ -1,0 +1,28 @@
+# Quinary System Reference
+
+## What is Quinary?
+Quinary is a base-5 number system using digits 0, 1, 2, 3, 4.
+
+## Conversion Formula
+For a 3-digit quinary number ABC:
+Decimal = A×5² + B×5¹ + C×5⁰
+
+## Example Conversions
+- 100₅ = 1×25 + 0×5 + 0×1 = 25₁₀
+- 123₅ = 1×25 + 2×5 + 3×1 = 38₁₀  
+- 444₅ = 4×25 + 4×5 + 4×1 = 124₁₀
+
+## ASCII Reference (Common Characters)
+- 65-90: A-Z (uppercase letters)
+- 97-122: a-z (lowercase letters)  
+- 48-57: 0-9 (digits)
+- 32: space
+
+## Your Task
+Convert these quinary values to ASCII:
+313 : 310 : 314 : 421 : 322 : 310
+
+## Solution Steps
+1. Convert each quinary number to decimal
+2. Look up the ASCII character for each decimal value
+3. Combine the 6 characters to form the access key
