@@ -135,6 +135,8 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
   const [points, setPoints] = useState(100);
   const [revealedHints, setRevealedHints] = useState<number[]>([0]); // First hint always revealed
   const [currentEvent, setCurrentEvent] = useState<Event | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState<string>('All');
+  const [difficultyFilter, setDifficultyFilter] = useState<string>('All');
 
   useEffect(() => {
     loadChallenge();
@@ -614,6 +616,92 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
                   })}
                 </div>
               )}
+            </div>
+          </TerminalBox>
+        </div>
+
+        {/* Challenge Browser */}
+        <div className="mb-6">
+          <TerminalBox title="challenge_browser.sh">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-green-400 font-bold">Challenge Browser</h3>
+                <button
+                  onClick={() => {
+                    setCategoryFilter('All');
+                    setDifficultyFilter('All');
+                  }}
+                  className="text-green-400 hover:text-green-300 transition-colors text-sm underline"
+                >
+                  Reset Filters
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-4">
+                <div className="flex items-center gap-2">
+                  <label className="text-green-400 text-sm">Category:</label>
+                  <select
+                    value={categoryFilter}
+                    onChange={(e) => setCategoryFilter(e.target.value)}
+                    className="bg-black/50 border border-green-500/30 rounded px-3 py-1 text-green-400 text-sm focus:border-green-500 focus:outline-none"
+                  >
+                    <option value="All">All</option>
+                    {[...new Set(SAMPLE_QUESTIONS.map(q => q.category))].map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="text-green-400 text-sm">Difficulty:</label>
+                  <select
+                    value={difficultyFilter}
+                    onChange={(e) => setDifficultyFilter(e.target.value)}
+                    className="bg-black/50 border border-green-500/30 rounded px-3 py-1 text-green-400 text-sm focus:border-green-500 focus:outline-none"
+                  >
+                    <option value="All">All</option>
+                    {[...new Set(SAMPLE_QUESTIONS.map(q => q.difficulty))].map(diff => (
+                      <option key={diff} value={diff}>{diff}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="space-y-4">
+                {Object.entries(
+                  SAMPLE_QUESTIONS
+                    .filter(q => (categoryFilter === 'All' || q.category === categoryFilter) &&
+                                 (difficultyFilter === 'All' || q.difficulty === difficultyFilter))
+                    .reduce((acc, q) => {
+                      if (!acc[q.category]) acc[q.category] = [];
+                      acc[q.category].push(q);
+                      return acc;
+                    }, {} as Record<string, Question[]>)
+                ).map(([category, questions]) => (
+                  <div key={category} className="border border-green-500/20 rounded p-4">
+                    <h4 className="text-green-400 font-bold mb-3">{category}</h4>
+                    <div className="grid gap-3 md:grid-cols-2">
+                      {questions.map(q => {
+                        const isCompleted = completedQuestions.includes(q.id);
+                        return (
+                          <div key={q.id} className="flex items-start gap-3 p-3 rounded bg-black/20 border border-green-500/10">
+                            {isCompleted ? (
+                              <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                            ) : (
+                              <XCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                            )}
+                            <div className="flex-1">
+                              <p className={`text-sm font-medium ${isCompleted ? 'text-green-400' : 'text-red-400'}`}>
+                                {q.title}
+                              </p>
+                              <p className="text-xs text-green-300/60">
+                                {q.difficulty} • {isCompleted ? 'Completed' : 'Not Completed'}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </TerminalBox>
         </div>
