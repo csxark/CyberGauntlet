@@ -144,7 +144,7 @@ const DataParticles = ({ count = 450 }) => {
   return (
     <points ref={ref}>
       <bufferGeometry>
-        <bufferAttribute attach="attributes-position" count={points.length / 3} array={points} itemSize={3} />
+        <bufferAttribute attach="attributes-position" args={[points, 3]} />
       </bufferGeometry>
       <pointsMaterial 
         size={0.07} 
@@ -292,7 +292,7 @@ export function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#050505] text-green-400 font-mono relative overflow-x-hidden animate-fade-in">
+    <div className="min-h-screen bg-[#050505] text-green-400 font-mono relative overflow-x-hidden animate-fade-in flex flex-col">
       
       <HackerBackground />
       
@@ -328,8 +328,7 @@ export function LandingPage() {
         </div>
       </header>
 
-      <div className="relative z-10 pt-20 md:pt-24">
-        
+      <div className="relative z-10 pt-20 md:pt-24 flex-grow">
         {/* HERO SECTION */}
         <section className="container mx-auto px-4 py-8 md:py-16 lg:py-24">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12 items-center">
@@ -390,28 +389,28 @@ export function LandingPage() {
           </ScrollReveal>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <MissionCard 
+            <MissionCard
               delay={0}
               icon={Lock}
               title="Cryptography"
               desc="Crack unbreakable ciphers. From RSA to Elliptic Curve, test your math against the machine."
               tags={['RSA', 'AES', 'XOR']}
             />
-             <MissionCard 
+             <MissionCard
               delay={200}
               icon={Cpu}
               title="Reverse Eng"
               desc="Deconstruct binary executables. Read assembly, bypass debuggers, and find the secret logic."
               tags={['ASM', 'Ghidra', 'GDB']}
             />
-            <MissionCard 
+            <MissionCard
               delay={400}
               icon={Globe}
               title="Web Exploit"
               desc="Infiltrate secure networks. SQL injection, XSS, and server-side request forgery."
               tags={['SQLi', 'XSS', 'CSRF']}
             />
-            <MissionCard 
+            <MissionCard
               delay={600}
               icon={Trophy}
               title="Live Ops"
@@ -464,11 +463,11 @@ export function LandingPage() {
             </ScrollReveal>
           </div>
         </section>
-
-        <footer className="bg-black py-8 border-t border-green-900 text-center text-xs text-gray-600 font-mono">
-          <p>CYBERGAUNTLET SYSTEM v2.5.0 // EST. 2026</p>
-        </footer>
       </div>
+
+      <footer className="bg-black py-8 border-t border-green-900 text-center text-xs text-gray-600 font-mono mt-auto">
+        <p>CYBERGAUNTLET SYSTEM v2.5.0 // EST. 2026</p>
+      </footer>
     </div>
   );
 }
