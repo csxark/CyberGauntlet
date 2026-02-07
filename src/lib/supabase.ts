@@ -38,3 +38,44 @@ export interface LeaderboardEntry {
   category?: string;
   difficulty?: string;
 }
+
+export interface TeamNote {
+  id: string;
+  team_id: string;
+  challenge_id: string;
+  user_id: string;
+  note_content: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// Real-time subscription functions for team notes
+export const subscribeToTeamNotes = (
+  teamId: string,
+  challengeId: string | null,
+  callback: (notes: TeamNote[]) => void
+) => {
+  if (!isSupabaseConfigured) return () => {};
+
+  const query = supabase
+    .from('team_notes')
+    .select('*')
+    .eq('team_id', teamId)
+    .order('created_at', { ascending: false });
+
+  if (challengeId) {
+    query.eq('challenge_id', challengeId);
+  }
+
+  return query.on('postgres_changes', {
+    event: '*',
+    schema: 'public',
+    table: 'team_notes',
+    filter: challengeId ? `team_id=eq.${teamId},challenge_id=eq.${challengeId}` : `team_id=eq.${teamId}`,
+  }, (payload) => {
+    // Re-fetch notes after any change
+    query.then(({ data }) => {
+      if (data) callback(data);
+    });
+  });
+};
