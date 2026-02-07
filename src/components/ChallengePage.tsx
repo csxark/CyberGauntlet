@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Download, Terminal, CheckCircle, XCircle, Clock, Trophy, LogOut, ChevronDown, ChevronUp, Users, MessageSquare } from 'lucide-react';
+import { Download, Terminal, CheckCircle, XCircle, Clock, Trophy, LogOut, ChevronDown, ChevronUp, Users, MessageSquare, Plus, Edit, Trash2 } from 'lucide-react';
 import { GlitchText } from './GlitchText';
 import { TerminalBox } from './TerminalBox';
 import { Leaderboard } from './Leaderboard';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { supabase, isSupabaseConfigured, TeamNote, subscribeToTeamNotes } from '../lib/supabase';
 
 interface ChallengePageProps {
   teamId: string;
@@ -139,6 +139,20 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
   useEffect(() => {
     loadChallenge();
   }, [teamId]);
+
+  useEffect(() => {
+    if (!question?.id || !teamId) return;
+
+    // Load initial notes for current challenge
+    loadTeamNotes();
+
+    // Subscribe to real-time updates for this challenge
+    const unsubscribe = subscribeToTeamNotes(teamId, question.id, (updatedNotes) => {
+      setTeamNotes(updatedNotes);
+    });
+
+    return unsubscribe;
+  }, [question?.id, teamId]);
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | undefined;
@@ -395,6 +409,86 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
         .from('profiles')
         .update({ points: newPoints })
         .eq('team_name', teamName);
+    }
+  };
+
+  const loadTeamNotes = async () => {
+    if (!question?.id || !teamId) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('team_notes')
+        .select('*')
+        .eq('team_id', teamId)
+        .eq('challenge_id', question.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setTeamNotes(data || []);
+    } catch (err) {
+      console.error('Error loading team notes:', err);
+    }
+  };
+
+  const addTeamNote = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!question?.id || !teamId || !newNote.trim()) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('team_notes')
+        .insert({
+          team_id: teamId,
+          challenge_id: question.id,
+          user_id: (await supabase.auth.getUser()).data.user?.id,
+          note_content: newNote.trim()
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setTeamNotes([data, ...teamNotes]);
+      setNewNote('');
+    } catch (err) {
+      console.error('Error adding team note:', err);
+      alert('Failed to add note. Please try again.');
+    }
+  };
+
+  const updateTeamNote = async (noteId: string, content: string) => {
+    try {
+      const { error } = await supabase
+        .from('team_notes')
+        .update({ note_content: content.trim() })
+        .eq('id', noteId);
+
+      if (error) throw error;
+
+      setTeamNotes(teamNotes.map(note =>
+        note.id === noteId ? { ...note, note_content: content.trim() } : note
+      ));
+      setEditingNote(null);
+      setEditContent('');
+    } catch (err) {
+      console.error('Error updating team note:', err);
+      alert('Failed to update note. Please try again.');
+    }
+  };
+
+  const deleteTeamNote = async (noteId: string) => {
+    try {
+      const { error } = await supabase
+        .from('team_notes')
+        .delete()
+        .eq('id', noteId);
+
+      if (error) throw error;
+
+      setTeamNotes(teamNotes.filter(note => note.id !== noteId));
+    } catch (err) {
+      console.error('Error deleting team note:', err);
+      alert('Failed to delete note. Please try again.');
     }
   };
 
@@ -873,6 +967,107 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
                 )}
               </div>
             )}
+          </TerminalBox>
+
+          {/* Team Notes Section */}
+          <TerminalBox title="team_notes.sh">
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 mb-4">
+                <MessageSquare className="w-6 h-6 text-emerald-400" />
+                <h3 className="text-xl font-bold text-emerald-400">Team Notes</h3>
+              </div>
+
+              {/* Add New Note */}
+              <form onSubmit={addTeamNote} className="space-y-3">
+                <div>
+                  <label className="block text-emerald-400 mb-2 text-sm">ADD NOTE:</label>
+                  <textarea
+                    value={newNote}
+                    onChange={(e) => setNewNote(e.target.value)}
+                    placeholder="Share your progress, ideas, or findings with your team..."
+                    className="w-full bg-black/50 border border-emerald-500/30 rounded px-4 py-3 text-emerald-400 placeholder-emerald-700 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 resize-none"
+                    rows={3}
+                    required
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={!newNote.trim()}
+                  className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-black font-semibold px-4 py-2 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Plus className="w-4 h-4" />
+                  ADD NOTE
+                </button>
+              </form>
+
+              {/* Notes List */}
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {teamNotes.length === 0 ? (
+                  <p className="text-emerald-400/60 text-center py-8">No team notes yet. Be the first to share!</p>
+                ) : (
+                  teamNotes.map((note) => (
+                    <div
+                      key={note.id}
+                      className="p-4 bg-black/30 border border-emerald-500/20 rounded-lg"
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="text-emerald-400 font-semibold text-sm">
+                          {new Date(note.created_at).toLocaleString()}
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => {
+                              setEditingNote(note.id);
+                              setEditContent(note.note_content);
+                            }}
+                            className="text-emerald-400 hover:text-emerald-300 transition-colors"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => deleteTeamNote(note.id)}
+                            className="text-red-400 hover:text-red-300 transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                      {editingNote === note.id ? (
+                        <div className="space-y-2">
+                          <textarea
+                            value={editContent}
+                            onChange={(e) => setEditContent(e.target.value)}
+                            className="w-full bg-black/50 border border-emerald-500/30 rounded px-3 py-2 text-emerald-400 focus:border-emerald-500 focus:outline-none resize-none"
+                            rows={3}
+                          />
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => updateTeamNote(note.id, editContent)}
+                              className="bg-emerald-600 hover:bg-emerald-500 text-black font-semibold px-3 py-1 rounded text-sm transition-all"
+                            >
+                              SAVE
+                            </button>
+                            <button
+                              onClick={() => {
+                                setEditingNote(null);
+                                setEditContent('');
+                              }}
+                              className="bg-gray-600 hover:bg-gray-500 text-black font-semibold px-3 py-1 rounded text-sm transition-all"
+                            >
+                              CANCEL
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-emerald-300 text-sm leading-relaxed">
+                          {note.note_content}
+                        </p>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
           </TerminalBox>
         </div>
       </div>

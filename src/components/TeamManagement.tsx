@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Plus, Search, Crown, UserPlus } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { Users, Plus, Search, Crown, UserPlus, MessageSquare, Edit, Trash2 } from 'lucide-react';
+import { supabase, TeamNote, subscribeToTeamNotes } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 
 interface Team {
@@ -14,6 +14,98 @@ interface Team {
 
 interface TeamManagementProps {
   onTeamJoined: (team: Team) => void;
+}
+
+interface TeamNotesOverviewProps {
+  teamId: string;
+}
+
+export function TeamNotesOverview({ teamId }: TeamNotesOverviewProps) {
+  const { user } = useAuth();
+  const [notes, setNotes] = useState<TeamNote[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!teamId) return;
+
+    // Load initial notes
+    loadNotes();
+
+    // Subscribe to real-time updates
+    const unsubscribe = subscribeToTeamNotes(teamId, null, (updatedNotes) => {
+      setNotes(updatedNotes);
+    });
+
+    return unsubscribe;
+  }, [teamId]);
+
+  const loadNotes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('team_notes')
+        .select('*')
+        .eq('team_id', teamId)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+      setNotes(data || []);
+    } catch (err) {
+      console.error('Error loading team notes:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="border border-emerald-500/20 bg-zinc-900/70 backdrop-blur-xl p-6 rounded-2xl">
+        <div className="flex items-center gap-3 mb-4">
+          <MessageSquare className="w-6 h-6 text-emerald-400" />
+          <h3 className="text-xl font-bold text-emerald-400">Team Notes</h3>
+        </div>
+        <div className="flex items-center justify-center p-8">
+          <div className="animate-spin">
+            <MessageSquare className="w-6 h-6 text-emerald-400" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="border border-emerald-500/20 bg-zinc-900/70 backdrop-blur-xl p-6 rounded-2xl">
+      <div className="flex items-center gap-3 mb-4">
+        <MessageSquare className="w-6 h-6 text-emerald-400" />
+        <h3 className="text-xl font-bold text-emerald-400">Recent Team Notes</h3>
+      </div>
+
+      {notes.length === 0 ? (
+        <p className="text-emerald-400/60 text-center py-8">No team notes yet</p>
+      ) : (
+        <div className="space-y-3 max-h-96 overflow-y-auto">
+          {notes.map((note) => (
+            <div
+              key={note.id}
+              className="p-4 bg-black/30 border border-emerald-500/20 rounded-lg"
+            >
+              <div className="flex items-start justify-between mb-2">
+                <div className="text-emerald-400 font-semibold text-sm">
+                  Challenge: {note.challenge_id}
+                </div>
+                <div className="text-emerald-300/60 text-xs">
+                  {new Date(note.created_at).toLocaleString()}
+                </div>
+              </div>
+              <p className="text-emerald-300 text-sm leading-relaxed">
+                {note.note_content}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function TeamManagement({ onTeamJoined }: TeamManagementProps) {
