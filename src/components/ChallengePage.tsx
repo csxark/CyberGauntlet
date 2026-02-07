@@ -135,8 +135,6 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
   const [points, setPoints] = useState(100);
   const [revealedHints, setRevealedHints] = useState<number[]>([0]); // First hint always revealed
   const [currentEvent, setCurrentEvent] = useState<Event | null>(null);
-  const [categoryFilter, setCategoryFilter] = useState<string>('All');
-  const [difficultyFilter, setDifficultyFilter] = useState<string>('All');
 
   useEffect(() => {
     loadChallenge();
