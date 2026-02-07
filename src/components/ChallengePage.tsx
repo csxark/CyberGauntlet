@@ -21,6 +21,15 @@ interface LocalChallenge {
   hintsUsed?: number;
 }
 
+interface Event {
+  id: string;
+  event_name: string;
+  start_date: string;
+  end_date: string;
+  active_challenges: string[];
+  created_at: string;
+}
+
 interface Question {
   id: string;
   title: string;
@@ -125,6 +134,7 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
   const [showProgressDetails, setShowProgressDetails] = useState(false);
   const [points, setPoints] = useState(100);
   const [revealedHints, setRevealedHints] = useState<number[]>([0]); // First hint always revealed
+  const [currentEvent, setCurrentEvent] = useState<Event | null>(null);
 
   useEffect(() => {
     loadChallenge();
@@ -155,6 +165,18 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
       const completed = localStorage.getItem(`cybergauntlet_completed_${teamId}`);
       setCompletedQuestions(completed ? JSON.parse(completed) : []);
 
+      // Fetch current active event
+      if (isSupabaseConfigured) {
+        const now = new Date().toISOString();
+        const { data: event } = await supabase
+          .from('events')
+          .select('*')
+          .lte('start_date', now)
+          .gte('end_date', now)
+          .single();
+        setCurrentEvent(event);
+      }
+
       // Fetch team points
       if (isSupabaseConfigured) {
         const { data: profile } = await supabase
@@ -182,7 +204,12 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
         setElapsedTime(parsed.elapsedTime || 0);
         setRevealedHints(parsed.revealedHints || [0]);
       } else {
-        const availableQuestions = SAMPLE_QUESTIONS.filter(q => !(completed ? JSON.parse(completed) : []).includes(q.id));
+        let availableQuestions = SAMPLE_QUESTIONS.filter(q => !(completed ? JSON.parse(completed) : []).includes(q.id));
+
+        // Filter by active event if one exists
+        if (currentEvent) {
+          availableQuestions = availableQuestions.filter(q => currentEvent.active_challenges.includes(q.id));
+        }
 
         if (availableQuestions.length === 0) {
           setChallenge({ questionId: '', startedAt: 0, attempts: 0, completed: true });
@@ -283,7 +310,8 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
             points: totalPoints,
             completed_at: new Date().toISOString(),
             category: question.category,
-            difficulty: question.difficulty
+            difficulty: question.difficulty,
+            event_id: currentEvent?.id || null
           });
         }
 
@@ -424,10 +452,68 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
     );
   }
 
+  const getTimeUntilEvent = (event: Event) => {
+    const now = new Date();
+    const start = new Date(event.start_date);
+    const end = new Date(event.end_date);
+
+    if (now >= start && now <= end) {
+      return { type: 'active', timeLeft: end.getTime() - now.getTime() };
+    } else if (now < start) {
+      return { type: 'upcoming', timeLeft: start.getTime() - now.getTime() };
+    } else {
+      return { type: 'ended', timeLeft: 0 };
+    }
+  };
+
+  const formatCountdown = (milliseconds: number) => {
+    const days = Math.floor(milliseconds / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((milliseconds % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((milliseconds % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((milliseconds % (1000 * 60)) / 1000);
+
+    if (days > 0) return `${days}d ${hours}h ${minutes}m`;
+    if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
+    if (minutes > 0) return `${minutes}m ${seconds}s`;
+    return `${seconds}s`;
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 text-green-400 font-mono">
       <div className="scanlines"></div>
       <div className="relative z-10 container mx-auto px-4 py-6 max-w-4xl">
+        {/* Event Notification Banner */}
+        {currentEvent && (
+          <div className="mb-6">
+            <TerminalBox title="event_notification.sh">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={`w-3 h-3 rounded-full ${
+                    getTimeUntilEvent(currentEvent).type === 'active' ? 'bg-green-500 animate-pulse' :
+                    getTimeUntilEvent(currentEvent).type === 'upcoming' ? 'bg-blue-500' : 'bg-gray-500'
+                  }`}></div>
+                  <div>
+                    <h3 className="text-green-400 font-bold">{currentEvent.event_name}</h3>
+                    <p className="text-green-300/60 text-sm">
+                      {getTimeUntilEvent(currentEvent).type === 'active' ? 'Event is currently active' :
+                       getTimeUntilEvent(currentEvent).type === 'upcoming' ? 'Event starts soon' : 'Event has ended'}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-green-400 font-mono text-sm">
+                    {getTimeUntilEvent(currentEvent).type === 'active' ? 'ENDS IN:' :
+                     getTimeUntilEvent(currentEvent).type === 'upcoming' ? 'STARTS IN:' : 'ENDED'}
+                  </div>
+                  <div className="text-green-300/80 text-xs">
+                    {getTimeUntilEvent(currentEvent).type !== 'ended' ?
+                      formatCountdown(getTimeUntilEvent(currentEvent).timeLeft) : ''}
+                  </div>
+                </div>
+              </div>
+            </TerminalBox>
+          </div>
+        )}
         <header className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold">
