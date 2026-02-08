@@ -133,18 +133,106 @@ To add a challenge:
 
 If you would like assistance adding challenges, integrating a scoreboard, or automating challenge creation, please open an issue or request changes in the repository.
 
+## Contribution
+
+Contributions are welcome and appreciated.
+
+Before contributing, please read the following documents to understand our guidelines and expectations:
+- [Code of Conduct](Docs/CODE_OF_CONDUCT.md)
+- [Contribution Guidelines](Docs/Contributor.md)
+
+To contribute:
+1. Fork the repository
+2. Create a new branch for your changes `git checkout <feature-branch>`
+3. Make your changes following the project standards `git add <FILE>`
+4. Commit and push your changes to your fork 
+```bash 
+git commit -m "<commit-message>"
+git push origin <feature-branch>
+```
+
+5. Open a Pull Request for review
+
+By participating in this project, you agree to follow the Code of Conduct.
 
 ## License
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
+## 📁 Folder Architecture
+```bash
+📁 CyberGauntlet/
+├───📁 Databases/
+│   └───📁 supabase/
+│       └───📁 migrations/
+|           ├───📄 <date>_create_leaderboard.sql
+|           ├───📄 <date>_create_public_schema.sql
+|           ├───📄 <date>_posts_rls_policies.sql
+|           └───📄 <date>_create_team_sessions.sql
+├───📁 Docs/
+│   └───📁 screenshots/
+|        ├───📄 Landing.png
+|        ├───📄 Login.png
+|        └───📄 Objective.png
+|   ├───📄 ADMIN_SETUP.md
+|   ├───📄 CODE_OF_CONDUCT.md
+|   ├───📄 Contributor.md
+|   ├───📄 LEADERBOARD.md
+|   └───📄 LEADERBOARD_IMPLEMENTATION.md
+├───📁 Json/
+|   ├───📄 index.html
+|   ├───📄 package-lock.json
+|   ├───📄 package.json
+|   ├───📄 tsconfig.app.json
+|   ├───📄 tsconfig.json
+|   └───📄 tsconfig.node.json
+├───📁 public/
+│   └───📁 challenges/
+│       ├───📁 q1/
+|       |   ├───📄 cipher_collection.txt
+|       |   └───📄 hint.txt
+│       ├───📁 q3/
+|       |   └───📄 security.c
+│       ├───📁 q4/
+|           └───📄 secretnote.txt
+└───📁 src/
+    ├───📁 components/
+    |   ├───📄 ChallengePage.tsx
+    |   ├───📄 DocsPage.tsx
+    |   ├───📄 GlitchText.tsx
+    |   ├───📄 LandingPage.tsx
+    |   ├───📄 Leaderboard.tsx
+    |   └───📄 TerminalBox.tsx
+    ├───📁 context/
+    |   └───📄 AuthContext.tsx
+    ├───📁 data/
+    |   └───📄 teamData.ts
+    ├───📁 lib/
+    |   └───📄 supabase.ts
+    └───📁 pages/
+    |   ├───📄 Dashboard.tsx
+    |   ├───📄 LeaderboardPage.tsx
+    |   ├───📄 Login.tsx
+    |   ├───📄 Profile.tsx
+    |   └───📄 ProtectedRoute.tsx
+    ├───📄 App.tsx
+    ├───📄 index.css
+    ├───📄 main.tsx
+    └───📄 vite-env.d.ts
+├───📄 index.html
+├───📄 (... 17 more files)
+    
+```
+---
+
 ## 📁 Project Structure
 
 ```text
-docs/            → README.md, ADMIN_SETUP.md, Contributor.md,LEADERBOARD_IMPLEMENTATION.md,CODE_OF_CONDUCT.md,screenshots
-src/             → Application source code  
-public/          → Public assets and challenges  
-database/        → Supabase migrations  
-config/          → ESLint, Vite, Tailwind, PostCSS, TSConfig files  
-
+📁 docs/            → README.md, ADMIN_SETUP.md, Contributor.md,LEADERBOARD_IMPLEMENTATION.md,CODE_OF_CONDUCT.md,
+📁 screenshots
+📁 src/             → Application source code  
+📁 public/          → Public assets and challenges  
+📁 database/        → Supabase migrations  
+📁 config/          → ESLint, Vite, Tailwind, PostCSS, TSConfig files  
+```
 
 Feel free to use and modify the code as needed for your own CTF events!

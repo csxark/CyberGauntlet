@@ -135,13 +135,6 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
   const [points, setPoints] = useState(100);
   const [revealedHints, setRevealedHints] = useState<number[]>([0]); // First hint always revealed
   const [currentEvent, setCurrentEvent] = useState<Event | null>(null);
-  const [categoryFilter, setCategoryFilter] = useState<string>('All');
-  const [difficultyFilter, setDifficultyFilter] = useState<string>('All');
-  const [teamNotes, setTeamNotes] = useState<TeamNote[]>([]);
-  const [newNote, setNewNote] = useState('');
-  const [editingNote, setEditingNote] = useState<string | null>(null);
-  const [editContent, setEditContent] = useState('');
-  const [questions, setQuestions] = useState<Question[]>([]);
 
   useEffect(() => {
     loadQuestions();
