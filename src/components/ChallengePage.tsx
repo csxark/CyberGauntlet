@@ -141,8 +141,10 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
   const [newNote, setNewNote] = useState('');
   const [editingNote, setEditingNote] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
+  const [questions, setQuestions] = useState<Question[]>([]);
 
   useEffect(() => {
+    loadQuestions();
     loadChallenge();
   }, [teamId]);
 
@@ -178,6 +180,48 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
       if (interval) clearInterval(interval);
     };
   }, [isRunning, challenge, teamId]);
+
+  const loadQuestions = async () => {
+    try {
+      if (!isSupabaseConfigured) {
+        // Fallback to sample questions if Supabase is not configured
+        setQuestions(SAMPLE_QUESTIONS);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('challenges')
+        .select('*')
+        .eq('active', true)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // If no challenges in database, use sample questions
+      const dbQuestions = data || [];
+      if (dbQuestions.length === 0) {
+        setQuestions(SAMPLE_QUESTIONS);
+      } else {
+        // Convert database format to Question interface
+        const formattedQuestions: Question[] = dbQuestions.map(challenge => ({
+          id: challenge.id,
+          title: challenge.title,
+          description: challenge.description,
+          file_name: challenge.file_name || '',
+          file_path: challenge.file_path || '',
+          correct_flag: challenge.correct_flag,
+          hints: challenge.hints || [],
+          category: challenge.category,
+          difficulty: challenge.difficulty
+        }));
+        setQuestions(formattedQuestions);
+      }
+    } catch (err) {
+      console.error('Error loading questions:', err);
+      // Fallback to sample questions on error
+      setQuestions(SAMPLE_QUESTIONS);
+    }
+  };
 
   const loadChallenge = async () => {
     try {
@@ -224,7 +268,7 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
         setElapsedTime(parsed.elapsedTime || 0);
         setRevealedHints(parsed.revealedHints || [0]);
       } else {
-        let availableQuestions = SAMPLE_QUESTIONS.filter(q => !(completed ? JSON.parse(completed) : []).includes(q.id));
+        let availableQuestions = questions.filter(q => !(completed ? JSON.parse(completed) : []).includes(q.id));
 
         // Filter by active event if one exists
         if (currentEvent) {
@@ -254,7 +298,7 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
 
       setChallenge(localChallenge);
 
-      const q = SAMPLE_QUESTIONS.find(q => q.id === localChallenge.questionId);
+      const q = questions.find(q => q.id === localChallenge.questionId);
       if (q) {
         setQuestion(q);
       }
