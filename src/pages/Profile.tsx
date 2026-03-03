@@ -1,6 +1,13 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { SessionManagement } from '../components/SessionManagement';
+import {
+  sanitizeMultilineText,
+  sanitizePlainText,
+  sanitizeTeamName,
+  isValidTeamName,
+} from '../utils/inputSecurity';
 
 type Profile = {
   id: string;
@@ -165,12 +172,14 @@ export default function Profile() {
 
       const submission = {
         submitter_id: profile.id,
-        title: submissionData.title,
-        description: submissionData.description,
-        category: submissionData.category,
-        difficulty: submissionData.difficulty,
-        correct_flag: submissionData.correct_flag,
-        hints: submissionData.hints.filter(hint => hint.trim() !== ''),
+        title: sanitizePlainText(submissionData.title, 120),
+        description: sanitizeMultilineText(submissionData.description, 4000),
+        category: sanitizePlainText(submissionData.category, 50),
+        difficulty: sanitizePlainText(submissionData.difficulty, 30),
+        correct_flag: sanitizePlainText(submissionData.correct_flag, 200),
+        hints: submissionData.hints
+          .map((hint) => sanitizeMultilineText(hint, 500))
+          .filter(hint => hint.trim() !== ''),
         assets: assetUrls,
       };
 
@@ -213,10 +222,20 @@ export default function Profile() {
         profilePictureUrl = await uploadImage(formData.profile_picture);
       }
 
+      const sanitizedTeamName = formData.team_name
+        ? sanitizeTeamName(formData.team_name)
+        : '';
+
+      if (sanitizedTeamName && !isValidTeamName(sanitizedTeamName)) {
+        throw new Error('Team name must be 3-32 chars and only contain letters, numbers, spaces, dot, underscore, or hyphen.');
+      }
+
       const profileData = {
         user_id: user.id,
-        team_name: formData.team_name || null,
-        leader_name: formData.leader_name || null,
+        team_name: sanitizedTeamName || null,
+        leader_name: formData.leader_name
+          ? sanitizePlainText(formData.leader_name, 80)
+          : null,
         profile_picture_url: profilePictureUrl,
         updated_at: new Date().toISOString(),
       };
@@ -526,6 +545,11 @@ export default function Profile() {
               )}
             </div>
           </div>
+        </div>
+
+        {/* Session Management */}
+        <div className="mt-8">
+          <SessionManagement />
         </div>
       </div>
     </div>

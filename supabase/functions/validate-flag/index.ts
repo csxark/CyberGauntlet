@@ -15,6 +15,19 @@ const RATE_LIMIT_CONFIG = {
   resetAfterSeconds: 86400,       // 24 hours inactivity
 }
 
+function sanitizePlainText(value: string, maxLen = 200): string {
+  return String(value ?? '')
+    .replace(/<[^>]*>/g, '')
+    .replace(/[\u0000-\u001F\u007F]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, maxLen)
+}
+
+function sanitizeTeamName(value: string): string {
+  return sanitizePlainText(value, 32)
+}
+
 /**
  * Check if team is currently rate limited
  */
@@ -201,6 +214,20 @@ serve(async (req) => {
       )
     }
 
+    const safeTeamName = sanitizeTeamName(team_name)
+    const safeCategory = category ? sanitizePlainText(category, 80) : 'General'
+    const safeDifficulty = difficulty ? sanitizePlainText(difficulty, 40) : 'Unknown'
+
+    if (!/^[A-Za-z0-9 _.-]{3,32}$/.test(safeTeamName)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid team_name format' }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
+    }
+
     // ============ IDEMPOTENCY CHECK ============
     // Check if this submission was already processed (using idempotency_key)
     // This prevents duplicate leaderboard entries from retries or concurrent requests
@@ -214,7 +241,7 @@ serve(async (req) => {
 
       if (!idempotencyError && existingSubmission) {
         // This submission was already processed successfully
-        console.log(`Duplicate submission detected: ${idempotency_key} for team ${team_name}`)
+        console.log(`Duplicate submission detected: ${idempotency_key} for team ${safeTeamName}`)
         
         return new Response(
           JSON.stringify({
@@ -235,11 +262,11 @@ serve(async (req) => {
 
     // ============ RATE LIMITING CHECK ============
     // Check if team is rate limited before processing
-    const rateLimitCheck = await checkTeamRateLimit(supabaseClient, team_name)
+    const rateLimitCheck = await checkTeamRateLimit(supabaseClient, safeTeamName)
 
     if (rateLimitCheck.isLocked) {
       logAbusePattern(
-        team_name,
+        safeTeamName,
         rateLimitCheck.session,
         'MEDIUM',
         'Rate limited request attempted'
@@ -250,7 +277,7 @@ serve(async (req) => {
       const userAgent = req.headers.get('User-Agent')
       await logAbuseToDB(
         supabaseClient,
-        team_name,
+        safeTeamName,
         challenge_id,
         rateLimitCheck.session,
         'medium',
@@ -314,7 +341,7 @@ serve(async (req) => {
 
       // ============ RESET RATE LIMIT ON SUCCESS ============
       // Clear failed attempts and lockout when team submits correct flag
-      await resetFailedAttempts(supabaseClient, team_name)
+      await resetFailedAttempts(supabaseClient, safeTeamName)
 
       // Insert to leaderboard atomically with correct submission
       // Use unique constraint to prevent duplicates from race conditions
@@ -324,7 +351,7 @@ serve(async (req) => {
       const totalPoints = basePoints + timeBonus
 
       const leaderboardEntry: any = {
-        team_name,
+        team_name: safeTeamName,
         question_id: challenge_id,
         time_spent: time_spent || 0,
         attempts: attempts || 1,
@@ -333,8 +360,8 @@ serve(async (req) => {
         completion_time: completionTime,
         points: totalPoints,
         completed_at: completionTime,
-        category: category || 'General',
-        difficulty: difficulty || 'Unknown',
+        category: safeCategory,
+        difficulty: safeDifficulty,
         event_id: event_id || null
       }
 
@@ -366,13 +393,13 @@ serve(async (req) => {
     } else {
       // ============ INCREMENT RATE LIMIT ON FAILURE ============
       // Track failed attempts and apply exponential backoff lockout
-      const failureUpdate = await incrementFailedAttempts(supabaseClient, team_name, rateLimitCheck.session)
+      const failureUpdate = await incrementFailedAttempts(supabaseClient, safeTeamName, rateLimitCheck.session)
 
       // Check for abuse patterns and log if necessary
       if (failureUpdate.newFailed >= 3) {
         const severity = failureUpdate.newLevel > 2 ? 'HIGH' : 'MEDIUM'
         const action = failureUpdate.lockedUntil ? 'Team locked out' : 'Threshold approaching'
-        logAbusePattern(team_name, rateLimitCheck.session, severity, action)
+        logAbusePattern(safeTeamName, rateLimitCheck.session, severity, action)
       }
 
       // Check for format validation (flags should start with CG{ and end with })
@@ -389,7 +416,7 @@ serve(async (req) => {
       await supabaseClient
         .from('leaderboard')
         .insert({
-          team_name,
+          team_name: safeTeamName,
           question_id: challenge_id,
           time_spent: 0,
           attempts: 1,

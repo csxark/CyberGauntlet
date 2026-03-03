@@ -18,6 +18,7 @@
     "@supabase/supabase-js": "^2.90.1",
     "@types/three": "^0.182.0",
     "@vitejs/plugin-react": "^5.1.2",
+    "dompurify": "^3.2.6",
     "lucide-react": "^0.562.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
@@ -35,4 +36,5 @@
     "jsdom": "^27.4.0",
     "vitest": "^4.0.18"
   }
+
 }
