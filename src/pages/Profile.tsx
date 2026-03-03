@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { SessionManagement } from '../components/SessionManagement';
 
 type Profile = {
   id: string;
@@ -526,6 +527,11 @@ export default function Profile() {
               )}
             </div>
           </div>
+        </div>
+
+        {/* Session Management */}
+        <div className="mt-8">
+          <SessionManagement />
         </div>
       </div>
     </div>
