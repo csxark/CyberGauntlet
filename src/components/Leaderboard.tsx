@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Trophy, Clock, Target, TrendingUp, TrendingDown, Award } from 'lucide-react';
 import { supabase, isSupabaseConfigured, LeaderboardEntry } from '../lib/supabase';
 import { TerminalBox } from './TerminalBox';
+import { safeDisplayText } from '../utils/inputSecurity';
 
 interface LeaderboardProps {
   currentTeamName?: string;
@@ -266,7 +267,10 @@ export function Leaderboard({ currentTeamName, questionFilter }: LeaderboardProp
         {/* Leaderboard entries */}
         <div className="space-y-2 max-h-96 overflow-y-auto">
           {sortedTeams.map((team, idx) => {
-            const isCurrentTeam = currentTeamName && team.team_name === currentTeamName;
+            const safeTeamName = safeDisplayText(team.team_name, 64);
+            const isCurrentTeam = Boolean(
+              currentTeamName && safeDisplayText(currentTeamName, 64) === safeTeamName
+            );
             const rank = idx + 1;
 
             return (
@@ -310,7 +314,7 @@ export function Leaderboard({ currentTeamName, questionFilter }: LeaderboardProp
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <p className={`font-bold ${isCurrentTeam ? 'text-green-300' : 'text-green-400'}`}>
-                        {team.team_name}
+                        {safeTeamName}
                       </p>
                       {isCurrentTeam && (
                         <span className="text-xs bg-green-500 text-black px-2 py-0.5 rounded font-bold">

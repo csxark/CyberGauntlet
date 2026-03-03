@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Users, Plus, Search, Crown, UserPlus, MessageSquare, Edit, Trash2 } from 'lucide-react';
 import { supabase, TeamNote, subscribeToTeamNotes } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { isValidTeamName, sanitizeTeamName, safeDisplayText } from '../utils/inputSecurity';
 
 interface Team {
   id: string;
@@ -98,7 +99,7 @@ export function TeamNotesOverview({ teamId }: TeamNotesOverviewProps) {
                 </div>
               </div>
               <p className="text-emerald-300 text-sm leading-relaxed">
-                {note.note_content}
+                {safeDisplayText(note.note_content, 3000)}
               </p>
             </div>
           ))}
@@ -157,7 +158,15 @@ export function TeamManagement({ onTeamJoined }: TeamManagementProps) {
 
   const createTeam = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !newTeamName.trim()) return;
+    if (!user) return;
+
+    const normalizedTeamName = sanitizeTeamName(newTeamName);
+    if (!normalizedTeamName) return;
+
+    if (!isValidTeamName(normalizedTeamName)) {
+      alert('Team name must be 3-32 chars and only contain letters, numbers, spaces, dot, underscore, or hyphen.');
+      return;
+    }
 
     try {
       const teamId = `team_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -166,7 +175,7 @@ export function TeamManagement({ onTeamJoined }: TeamManagementProps) {
         .from('teams')
         .insert({
           team_id: teamId,
-          team_name: newTeamName.trim(),
+          team_name: normalizedTeamName,
           members: [user.id],
           shared_points: 100
         })
@@ -254,7 +263,7 @@ export function TeamManagement({ onTeamJoined }: TeamManagementProps) {
           </div>
           <div className="space-y-2">
             <p className="text-emerald-300">
-              <span className="text-emerald-400/60">Team Name:</span> {userTeam.team_name}
+              <span className="text-emerald-400/60">Team Name:</span> {safeDisplayText(userTeam.team_name, 64)}
             </p>
             <p className="text-emerald-300">
               <span className="text-emerald-400/60">Members:</span> {userTeam.members.length}
@@ -343,7 +352,7 @@ export function TeamManagement({ onTeamJoined }: TeamManagementProps) {
                   className="flex items-center justify-between p-4 bg-black/30 border border-emerald-500/20 rounded-lg"
                 >
                   <div>
-                    <h4 className="text-emerald-400 font-semibold">{team.team_name}</h4>
+                    <h4 className="text-emerald-400 font-semibold">{safeDisplayText(team.team_name, 64)}</h4>
                     <p className="text-emerald-300/60 text-sm">
                       {team.members.length} member{team.members.length !== 1 ? 's' : ''} • {team.shared_points} points
                     </p>
