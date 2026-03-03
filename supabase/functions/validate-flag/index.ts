@@ -201,6 +201,38 @@ serve(async (req) => {
       )
     }
 
+    // ============ IDEMPOTENCY CHECK ============
+    // Check if this submission was already processed (using idempotency_key)
+    // This prevents duplicate leaderboard entries from retries or concurrent requests
+    if (idempotency_key) {
+      const { data: existingSubmission, error: idempotencyError } = await supabaseClient
+        .from('leaderboard')
+        .select('*')
+        .eq('idempotency_key', idempotency_key)
+        .eq('completed_at IS NOT', null)
+        .maybeSingle()
+
+      if (!idempotencyError && existingSubmission) {
+        // This submission was already processed successfully
+        console.log(`Duplicate submission detected: ${idempotency_key} for team ${team_name}`)
+        
+        return new Response(
+          JSON.stringify({
+            is_correct: true,
+            status: 'correct',
+            feedback: 'Challenge already completed',
+            duplicate_submission: true,
+            leaderboard_id: existingSubmission.id,
+            points: existingSubmission.points
+          }),
+          {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        )
+      }
+    }
+
     // ============ RATE LIMITING CHECK ============
     // Check if team is rate limited before processing
     const rateLimitCheck = await checkTeamRateLimit(supabaseClient, team_name)
@@ -269,13 +301,6 @@ serve(async (req) => {
     const hashArray = Array.from(new Uint8Array(hashBuffer))
     const submittedFlagHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
 
-    // Hash the submitted flag using SHA-256
-    const encoder = new TextEncoder()
-    const data = encoder.encode(submitted_flag)
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data)
-    const hashArray = Array.from(new Uint8Array(hashBuffer))
-    const submittedFlagHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
-
     // Check if flag is correct
     const isCorrect = submittedFlagHash === validation.correct_flag_hash
 
@@ -331,26 +356,9 @@ serve(async (req) => {
         // PostgreSQL unique constraint violation code is '23505'
         if (insertError.code === '23505') {
           // This is expected for concurrent submissions - not an error
-          console.log('Duplicate leaderboard entry prevhigh' : 'medium'
-        const action = failureUpdate.lockedUntil 
-          ? `Team locked out for ${calculateLockoutDuration(failureUpdate.newLevel - 1)} seconds`
-          : `${failureUpdate.newFailed} failed attempts (threshold: ${RATE_LIMIT_CONFIG.maxFailedAttempts})`
-        
-        logAbusePattern(team_name, rateLimitCheck.session, severity.toUpperCase(), action)
-
-        // Log to database for audit trail
-        const ipAddress = req.headers.get('X-Forwarded-For') || req.headers.get('X-Real-IP')
-        const userAgent = req.headers.get('User-Agent')
-        await logAbuseToDB(
-          supabaseClient,
-          team_name,
-          challenge_id,
-          { ...rateLimitCheck.session, ...failureUpdate },
-          severity,
-          action,
-          ipAddress || undefined,
-          userAgent || undefined
-        
+          console.log('Duplicate leaderboard entry prevented by unique constraint')
+          leaderboardInserted = false // Record already exists
+        } else {
           // Unexpected error - log it but don't fail the validation
           console.error('Leaderboard insert error:', insertError)
         }
