@@ -343,26 +343,88 @@ serve(async (req) => {
       // Clear failed attempts and lockout when team submits correct flag
       await resetFailedAttempts(supabaseClient, safeTeamName)
 
-      // Insert to leaderboard atomically with correct submission
-      // Use unique constraint to prevent duplicates from race conditions
-      const completionTime = new Date().toISOString()
-      const basePoints = 100
-      const timeBonus = time_spent && time_spent < 300 ? 50 : time_spent && time_spent < 600 ? 25 : 0
-      const totalPoints = basePoints + timeBonus
+      // ============ VALIDATE SCORE CLAIMS AGAINST SESSION ============
+      // Get challenge session to verify submitted time/hints/attempts
+      const { data: challengeSession, error: sessionError } = await supabaseClient
+        .from('challenge_sessions')
+        .select('*')
+        .eq('team_id', safeTeamName)
+        .eq('challenge_id', challenge_id)
+        .single()
 
+      // Server-side score validation
+      const serverReceivedTime = new Date()
+      const sessionStartTime = start_time ? new Date(start_time) : serverReceivedTime
+      const elapsedSeconds = Math.floor((serverReceivedTime.getTime() - sessionStartTime.getTime()) / 1000)
+      
+      // Sanitize and validate submitted values
+      const submittedTimeSpent = Math.max(0, Math.min(86400, time_spent || 0)) // Clamp to 0-24 hours
+      const submittedAttempts = Math.max(1, Math.min(1000, attempts || 1)) // Clamp to 1-1000
+      const submittedHintsUsed = Math.max(0, Math.min(100, hints_used || 0)) // Clamp to 0-100
+
+      // ============ REGISTER SUBMISSION FOR VALIDATION ============
+      // Call database function to validate and check for anomalies
+      const { data: validationResult, error: validationError } = await supabaseClient
+        .rpc('register_leaderboard_submission', {
+          p_team_id: safeTeamName,
+          p_challenge_id: challenge_id,
+          p_submitted_time_spent: submittedTimeSpent,
+          p_submitted_attempts: submittedAttempts,
+          p_submitted_hints_used: submittedHintsUsed,
+          p_session_start_time: sessionStartTime.toISOString()
+        })
+
+      let validationPassed = true
+      let validationWarnings: string[] = []
+      
+      if (!validationError && validationResult && validationResult.length > 0) {
+        const validation = validationResult[0]
+        validationPassed = validation.is_valid
+        validationWarnings = validation.warnings || []
+        
+        if (validation.should_flag) {
+          console.warn(`LEADERBOARD_INTEGRITY: ${safeTeamName} - ${challenge_id}: ${validation.flag_reason}`)
+          logAbuseToDB(
+            supabaseClient,
+            safeTeamName,
+            challenge_id,
+            rateLimitCheck.session,
+            'medium',
+            `Score validation warnings: ${validationWarnings.join(', ')}`,
+            req.headers.get('X-Forwarded-For') || undefined,
+            req.headers.get('User-Agent') || undefined
+          )
+        }
+      }
+
+      // ============ CALCULATE SERVER-SIDE POINTS ============
+      // Do NOT trust client-provided time_spent - recalculate based on validated elapsed time
+      const serverCalculatedTimeSpent = Math.min(submittedTimeSpent, elapsedSeconds)
+      const basePoints = 100
+      const timeBonus = serverCalculatedTimeSpent < 300 ? 50 : serverCalculatedTimeSpent < 600 ? 25 : 0
+      const hintsBonus = submittedHintsUsed > 0 ? Math.max(0, 20 - (submittedHintsUsed * 5)) : 0 // -5 per hint used
+      const attemptsBonus = submittedAttempts === 1 ? 25 : submittedAttempts <= 3 ? 10 : 0
+      const totalPoints = Math.max(50, basePoints + timeBonus + hintsBonus + attemptsBonus) // Minimum 50 points
+
+      // ============ INSERT TO LEADERBOARD WITH VALIDATION DATA ============
+      const completionTime = serverReceivedTime.toISOString()
       const leaderboardEntry: any = {
         team_name: safeTeamName,
         question_id: challenge_id,
-        time_spent: time_spent || 0,
-        attempts: attempts || 1,
-        hints_used: hints_used || 0,
-        start_time: start_time || completionTime,
+        time_spent: serverCalculatedTimeSpent, // Server-calculated, not client-provided
+        attempts: submittedAttempts,
+        hints_used: submittedHintsUsed,
+        start_time: sessionStartTime.toISOString(),
         completion_time: completionTime,
         points: totalPoints,
         completed_at: completionTime,
         category: safeCategory,
         difficulty: safeDifficulty,
-        event_id: event_id || null
+        event_id: event_id || null,
+        session_start_time: sessionStartTime.toISOString(),
+        server_received_time: completionTime,
+        validation_level: validationPassed ? 'validated' : 'flagged',
+        validation_warnings: validationWarnings
       }
 
       // Add idempotency_key if provided
@@ -378,6 +440,13 @@ serve(async (req) => {
       // If insert succeeded, record was created
       if (!insertError && insertedData && insertedData.length > 0) {
         leaderboardInserted = true
+        
+        // Update challenge_sessions with leaderboard_id
+        await supabaseClient
+          .from('challenge_sessions')
+          .update({ leaderboard_id: insertedData[0].id })
+          .eq('team_id', safeTeamName)
+          .eq('challenge_id', challenge_id)
       } else if (insertError) {
         // Check if error is due to unique constraint violation (duplicate)
         // PostgreSQL unique constraint violation code is '23505'
@@ -394,6 +463,13 @@ serve(async (req) => {
       // ============ INCREMENT RATE LIMIT ON FAILURE ============
       // Track failed attempts and apply exponential backoff lockout
       const failureUpdate = await incrementFailedAttempts(supabaseClient, safeTeamName, rateLimitCheck.session)
+
+      // ============ RECORD WRONG ATTEMPT FOR SCORE VALIDATION ============
+      // This ensures server-side verification of attempts count
+      await supabaseClient.rpc('record_wrong_attempt', {
+        p_team_id: safeTeamName,
+        p_challenge_id: challenge_id
+      })
 
       // Check for abuse patterns and log if necessary
       if (failureUpdate.newFailed >= 3) {
@@ -420,6 +496,7 @@ serve(async (req) => {
           question_id: challenge_id,
           time_spent: 0,
           attempts: 1,
+          hints_used: 0,
           completed_at: null
         })
     }

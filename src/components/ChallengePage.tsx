@@ -295,6 +295,27 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
           elapsedTime: 0,
           revealedHints: [0]
         }));
+
+        // ============ RECORD CHALLENGE SESSION START (ANTI-CHEAT) ============
+        // Register this challenge session in the database for server-side validation
+        if (isSupabaseConfigured) {
+          try {
+            await supabase
+              .from('challenge_sessions')
+              .upsert({
+                team_id: teamName,
+                challenge_id: randomQuestion.id,
+                session_start_time: new Date(localChallenge.startedAt).toISOString(),
+                hint_reveal_count: 0,
+                wrong_attempt_count: 0
+              }, {
+                onConflict: 'team_id,challenge_id'
+              });
+          } catch (err) {
+            console.error('Error recording challenge session:', err);
+            // Non-blocking - don't interrupt challenge load
+          }
+        }
       }
 
       setChallenge(localChallenge);
@@ -475,6 +496,20 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
       // Update local state with the new points from the server
       const newRevealedHints = [...revealedHints, nextHintIndex];
       const newHintsUsed = (challenge.hintsUsed || 0) + 1;
+
+      // ============ RECORD HINT REVEAL (ANTI-CHEAT) ============
+      // Update server-side hint count for score validation
+      if (isSupabaseConfigured && question) {
+        try {
+          await supabase.rpc('record_hint_reveal', {
+            p_team_id: teamName,
+            p_challenge_id: question.id
+          });
+        } catch (err) {
+          console.error('Error recording hint reveal:', err);
+          // Non-blocking - hint is still revealed locally
+        }
+      }
 
       // Update UI with the server-confirmed points
       setPoints(data.new_points);
