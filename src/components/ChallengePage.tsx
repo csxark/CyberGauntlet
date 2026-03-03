@@ -376,39 +376,59 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
   };
 
   const revealNextHint = async () => {
-    if (!question || !challenge) return;
+    if (!question || !challenge || !isSupabaseConfigured) return;
 
     const nextHintIndex = revealedHints.length;
     if (nextHintIndex >= question.hints.length) return;
 
-    const cost = 10; // Cost per hint
-    if (points < cost) return;
+    try {
+      // Call the reveal-hint Edge Function for atomic point deduction
+      const { data, error } = await supabase.functions.invoke('reveal-hint', {
+        body: {
+          team_name: teamName
+        }
+      });
 
-    const newPoints = points - cost;
-    const newRevealedHints = [...revealedHints, nextHintIndex];
-    const newHintsUsed = (challenge.hintsUsed || 0) + 1;
+      if (error) {
+        console.error('Reveal hint error:', error);
+        alert('Failed to reveal hint. Please try again.');
+        return;
+      }
 
-    setPoints(newPoints);
-    setRevealedHints(newRevealedHints);
+      // Check if the operation was successful
+      if (!data.success) {
+        if (data.reason === 'concurrent_modification') {
+          // Retry by reloading the challenge
+          await loadChallenge();
+          alert('Points were modified. Refreshed your points. Please try again.');
+        } else {
+          alert(data.error || 'Insufficient points to reveal hint.');
+        }
+        return;
+      }
 
-    const updatedChallenge = {
-      ...challenge,
-      hintsUsed: newHintsUsed
-    };
-    setChallenge(updatedChallenge);
+      // Update local state with the new points from the server
+      const newRevealedHints = [...revealedHints, nextHintIndex];
+      const newHintsUsed = (challenge.hintsUsed || 0) + 1;
 
-    localStorage.setItem(`cybergauntlet_progress_${teamId}`, JSON.stringify({
-      ...updatedChallenge,
-      elapsedTime,
-      revealedHints: newRevealedHints
-    }));
+      // Update UI with the server-confirmed points
+      setPoints(data.new_points);
+      setRevealedHints(newRevealedHints);
 
-    // Update points in database
-    if (isSupabaseConfigured) {
-      await supabase
-        .from('profiles')
-        .update({ points: newPoints })
-        .eq('team_name', teamName);
+      const updatedChallenge = {
+        ...challenge,
+        hintsUsed: newHintsUsed
+      };
+      setChallenge(updatedChallenge);
+
+      localStorage.setItem(`cybergauntlet_progress_${teamId}`, JSON.stringify({
+        ...updatedChallenge,
+        elapsedTime,
+        revealedHints: newRevealedHints
+      }));
+    } catch (err) {
+      console.error('Error revealing hint:', err);
+      alert('Failed to reveal hint. Please try again.');
     }
   };
 

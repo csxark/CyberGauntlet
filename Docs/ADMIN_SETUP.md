@@ -32,13 +32,20 @@ localStorage keys per team:
 ## Database Tables
 
 ### team_sessions table
-Tracks active login sessions:
+Tracks active login sessions with user authentication:
 - `id` (uuid, primary key)
+- `user_id` (uuid, foreign key) - References profiles.user_id
 - `team_id` (text, UNIQUE) - Team identifier
 - `device_id` (text) - Device login identifier
 - `logged_in_at` (timestamp) - Login time
 - `last_activity` (timestamp) - Last activity time
 - `is_active` (boolean) - Current session status
+
+**Security:**
+- RLS policies enforce user authentication (auth.uid() checks)
+- Users can only view/modify their own team's sessions
+- Delete operations restricted to service role only (admin operations)
+- No public access allowed - all operations require authentication
 
 ### leaderboard table
 Challenge completion records:
@@ -65,7 +72,9 @@ Challenge completion records:
 - `src/components/AuthPage.tsx` - Team login
 - `src/components/ChallengePage.tsx` - Multi-question challenge flow
 - `src/data/teamData.ts` - Pre-registered teams
-- `supabase/migrations/20251102_create_team_sessions.sql` - Session table
+- `supabase/migrations/20251104204240_20251102_create_team_sessions.sql` - Session table (initial)
+- `supabase/migrations/20260201_add_user_id_to_team_sessions.sql` - Add user tracking
+- `supabase/migrations/20260202_secure_team_sessions_rls.sql` - Secure RLS policies
 - `supabase/migrations/20251102_create_leaderboard.sql` - Leaderboard table
 
 ## Sample Questions
