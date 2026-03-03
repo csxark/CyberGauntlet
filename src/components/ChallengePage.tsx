@@ -271,12 +271,23 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
     const newAttempts = challenge.attempts + 1;
 
     try {
-      // Call server-side validation
+      // Generate idempotency key for this submission
+      const idempotencyKey = `${teamName}-${question.id}-${Date.now()}`;
+
+      // Call server-side validation with all leaderboard data
       const { data, error } = await supabase.functions.invoke('validate-flag', {
         body: {
           challenge_id: question.id,
           submitted_flag: flag.trim(),
-          team_name: teamName
+          team_name: teamName,
+          time_spent: elapsedTime,
+          attempts: newAttempts,
+          hints_used: challenge.hintsUsed || 0,
+          start_time: new Date(challenge.startedAt).toISOString(),
+          category: question.category,
+          difficulty: question.difficulty,
+          event_id: currentEvent?.id || null,
+          idempotency_key: idempotencyKey
         }
       });
 
@@ -307,26 +318,10 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
         const newCompleted = [...completedQuestions, question.id];
         localStorage.setItem(`cybergauntlet_completed_${teamId}`, JSON.stringify(newCompleted));
 
-        if (isSupabaseConfigured) {
-          // Calculate points: base 100 + time bonus (faster = more bonus)
-          const basePoints = 100;
-          const timeBonus = completedTime < 300 ? 50 : completedTime < 600 ? 25 : 0;
-          const totalPoints = basePoints + timeBonus;
-
-          await supabase.from('leaderboard').insert({
-            team_name: teamName,
-            question_id: question.id,
-            time_spent: completedTime,
-            attempts: newAttempts,
-            hints_used: challenge.hintsUsed || 0,
-            start_time: new Date(challenge.startedAt).toISOString(),
-            completion_time: new Date().toISOString(),
-            points: totalPoints,
-            completed_at: new Date().toISOString(),
-            category: question.category,
-            difficulty: question.difficulty,
-            event_id: currentEvent?.id || null
-          });
+        // Leaderboard entry is now handled by validate-flag Edge Function
+        // No need for duplicate insert here - it's atomic in the function
+        if (data.duplicate_submission) {
+          console.log('Challenge already completed previously');
         }
 
         setChallenge(updatedChallenge);

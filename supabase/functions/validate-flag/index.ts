@@ -23,7 +23,19 @@ serve(async (req) => {
       }
     )
 
-    const { challenge_id, submitted_flag, team_name } = await req.json()
+    const { 
+      challenge_id, 
+      submitted_flag, 
+      team_name,
+      time_spent,
+      attempts,
+      hints_used,
+      start_time,
+      category,
+      difficulty,
+      event_id,
+      idempotency_key
+    } = await req.json()
 
     if (!challenge_id || !submitted_flag || !team_name) {
       return new Response(
@@ -64,10 +76,59 @@ serve(async (req) => {
 
     let feedback = validation.feedback_messages.incorrect
     let status = 'incorrect'
+    let leaderboardInserted = false
 
     if (isCorrect) {
       feedback = validation.feedback_messages.correct
       status = 'correct'
+
+      // Insert to leaderboard atomically with correct submission
+      // Use unique constraint to prevent duplicates from race conditions
+      const completionTime = new Date().toISOString()
+      const basePoints = 100
+      const timeBonus = time_spent && time_spent < 300 ? 50 : time_spent && time_spent < 600 ? 25 : 0
+      const totalPoints = basePoints + timeBonus
+
+      const leaderboardEntry = {
+        team_name,
+        question_id: challenge_id,
+        time_spent: time_spent || 0,
+        attempts: attempts || 1,
+        hints_used: hints_used || 0,
+        start_time: start_time || completionTime,
+        completion_time: completionTime,
+        points: totalPoints,
+        completed_at: completionTime,
+        category: category || 'General',
+        difficulty: difficulty || 'Unknown',
+        event_id: event_id || null
+      }
+
+      // Add idempotency_key if provided
+      if (idempotency_key) {
+        leaderboardEntry.idempotency_key = idempotency_key
+      }
+
+      const { data: insertedData, error: insertError } = await supabaseClient
+        .from('leaderboard')
+        .insert(leaderboardEntry)
+        .select()
+
+      // If insert succeeded, record was created
+      if (!insertError && insertedData && insertedData.length > 0) {
+        leaderboardInserted = true
+      } else if (insertError) {
+        // Check if error is due to unique constraint violation (duplicate)
+        // PostgreSQL unique constraint violation code is '23505'
+        if (insertError.code === '23505') {
+          // This is expected for concurrent submissions - not an error
+          console.log('Duplicate leaderboard entry prevented:', team_name, challenge_id)
+          leaderboardInserted = false
+        } else {
+          // Unexpected error - log it but don't fail the validation
+          console.error('Leaderboard insert error:', insertError)
+        }
+      }
     } else {
       // Check for format validation (flags should start with CG{ and end with })
       if (!submitted_flag.startsWith('CG{') || !submitted_flag.endsWith('}')) {
@@ -78,17 +139,15 @@ serve(async (req) => {
         // For now, just use the default incorrect message
         feedback = validation.feedback_messages.incorrect
       }
-    }
 
-    // Log the attempt in leaderboard (only for incorrect attempts to avoid duplicates)
-    if (!isCorrect) {
+      // Log incorrect attempts (without completed_at to allow multiple records)
       await supabaseClient
         .from('leaderboard')
         .insert({
           team_name,
           question_id: challenge_id,
-          time_spent: 0, // Will be updated from client
-          attempts: 1, // Will be updated from client
+          time_spent: 0,
+          attempts: 1,
           completed_at: null
         })
     }
@@ -98,7 +157,9 @@ serve(async (req) => {
         status,
         feedback,
         is_correct: isCorrect,
-        challenge_id
+        challenge_id,
+        leaderboard_recorded: leaderboardInserted,
+        duplicate_submission: isCorrect && !leaderboardInserted
       }),
       {
         status: 200,
