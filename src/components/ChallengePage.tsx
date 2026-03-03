@@ -322,8 +322,18 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
     const newAttempts = challenge.attempts + 1;
 
     try {
-      // Generate idempotency key for this submission
-      const idempotencyKey = `${teamName}-${question.id}-${Date.now()}`;
+      // Generate or retrieve submission UUID for idempotency
+      // Use localStorage to persist across retries
+      const submissionStorageKey = `cybergauntlet_submission_${teamId}_${question.id}`;
+      let submissionId = localStorage.getItem(submissionStorageKey);
+      
+      if (!submissionId) {
+        // Generate new UUID for this submission attempt
+        submissionId = crypto.randomUUID();
+        localStorage.setItem(submissionStorageKey, submissionId);
+      }
+
+      const idempotencyKey = submissionId;
 
       // Call server-side validation with all leaderboard data
       const { data, error } = await supabase.functions.invoke('validate-flag', {
@@ -375,6 +385,10 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
           console.log('Challenge already completed previously');
         }
 
+        // Clear submission ID after successful completion
+        const submissionStorageKey = `cybergauntlet_submission_${teamId}_${question.id}`;
+        localStorage.removeItem(submissionStorageKey);
+
         setChallenge(updatedChallenge);
         setCompletedQuestions(newCompleted);
         setFlag('');
@@ -395,6 +409,11 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
           ...updatedChallenge,
           elapsedTime
         }));
+        
+        // Generate new submission ID for next attempt (failed attempt consumed this one)
+        const submissionStorageKey = `cybergauntlet_submission_${teamId}_${question.id}`;
+        localStorage.removeItem(submissionStorageKey);
+        
         setTimeout(() => setResult(null), 3000);
       }
     } catch (err) {
