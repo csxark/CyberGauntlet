@@ -135,6 +135,57 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
   const [points, setPoints] = useState(100);
   const [revealedHints, setRevealedHints] = useState<number[]>([0]); // First hint always revealed
   const [currentEvent, setCurrentEvent] = useState<Event | null>(null);
+  const [availableChallenges, setAvailableChallenges] = useState<Question[]>(SAMPLE_QUESTIONS); // Initialize with hardcoded, then fetch from DB
+
+  // Fetch challenges from database
+  useEffect(() => {
+    const fetchChallenges = async () => {
+      if (!isSupabaseConfigured) {
+        // Use hardcoded challenges if Supabase not configured
+        setAvailableChallenges(SAMPLE_QUESTIONS);
+        return;
+      }
+
+      try {
+        const { data: challenges, error } = await supabase
+          .from('challenges')
+          .select('*')
+          .eq('is_active', true)
+          .order('created_at', { ascending: true });
+
+        if (error) {
+          console.error('Error fetching challenges:', error);
+          // Fallback to hardcoded challenges
+          setAvailableChallenges(SAMPLE_QUESTIONS);
+          return;
+        }
+
+        if (challenges && challenges.length > 0) {
+          // Transform database challenges to Question format
+          const transformedChallenges: Question[] = challenges.map((c: any) => ({
+            id: c.id,
+            title: c.title,
+            description: c.description,
+            file_name: c.file_name || '',
+            file_path: c.file_path || '',
+            correct_flag: c.correct_flag,
+            hints: c.hints || [],
+            category: c.category,
+            difficulty: c.difficulty
+          }));
+          setAvailableChallenges(transformedChallenges);
+        } else {
+          // No challenges in database, use hardcoded
+          setAvailableChallenges(SAMPLE_QUESTIONS);
+        }
+      } catch (err) {
+        console.error('Error loading challenges:', err);
+        setAvailableChallenges(SAMPLE_QUESTIONS);
+      }
+    };
+
+    fetchChallenges();
+  }, []);
 
   useEffect(() => {
     loadChallenge();
@@ -218,7 +269,7 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
         setElapsedTime(parsed.elapsedTime || 0);
         setRevealedHints(parsed.revealedHints || [0]);
       } else {
-        let availableQuestions = SAMPLE_QUESTIONS.filter(q => !(completed ? JSON.parse(completed) : []).includes(q.id));
+        let availableQuestions = availableChallenges.filter(q => !(completed ? JSON.parse(completed) : []).includes(q.id));
 
         // Filter by active event if one exists
         if (currentEvent) {
@@ -248,7 +299,7 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
 
       setChallenge(localChallenge);
 
-      const q = SAMPLE_QUESTIONS.find(q => q.id === localChallenge.questionId);
+      const q = availableChallenges.find(q => q.id === localChallenge.questionId);
       if (q) {
         setQuestion(q);
       }
@@ -329,7 +380,7 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
         setFlag('');
 
         setTimeout(() => {
-          if (newCompleted.length < SAMPLE_QUESTIONS.length) {
+          if (newCompleted.length < availableChallenges.length) {
             localStorage.removeItem(`cybergauntlet_progress_${teamId}`);
             loadChallenge();
             setResult(null);
@@ -520,7 +571,7 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
   //   }
   // };
 
-  const allQuestionsCompleted = completedQuestions.length === SAMPLE_QUESTIONS.length;
+  const allQuestionsCompleted = completedQuestions.length === availableChallenges.length;
 
   if (loading) {
     return (
@@ -651,7 +702,7 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
                 <p className="text-green-300/80 text-sm">
                   <span className="text-green-300/60">Progress:</span>{" "}
                   <span className="font-semibold">{completedQuestions.length}</span>
-                  <span className="text-green-300/60">/{SAMPLE_QUESTIONS.length} completed</span>
+                  <span className="text-green-300/60">/{availableChallenges.length} completed</span>
                 </p>
               </div>
             </div>
@@ -680,16 +731,16 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="text-green-400 font-bold">
-                  Challenge Progress: {completedQuestions.length}/{SAMPLE_QUESTIONS.length}
+                  Challenge Progress: {completedQuestions.length}/{availableChallenges.length}
                 </div>
                 <div className="text-green-300/60 text-sm">
-                  {Math.round((completedQuestions.length / SAMPLE_QUESTIONS.length) * 100)}% Complete
+                  {Math.round((completedQuestions.length / availableChallenges.length) * 100)}% Complete
                 </div>
               </div>
               <div className="w-full bg-black/50 rounded-full h-4 border border-green-500/30">
                 <div
                   className="bg-gradient-to-r from-green-500 to-green-400 h-4 rounded-full transition-all duration-500 ease-out"
-                  style={{ width: `${(completedQuestions.length / SAMPLE_QUESTIONS.length) * 100}%` }}
+                  style={{ width: `${(completedQuestions.length / availableChallenges.length) * 100}%` }}
                 ></div>
               </div>
               <button
@@ -701,7 +752,7 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
               </button>
               {showProgressDetails && (
                 <div className="space-y-2 mt-4 border-t border-green-500/20 pt-4">
-                  {SAMPLE_QUESTIONS.map((q) => {
+                  {availableChallenges.map((q) => {
                     const isCompleted = completedQuestions.includes(q.id);
                     return (
                       <div key={q.id} className="flex items-center gap-3 p-2 rounded bg-black/20">
@@ -752,7 +803,7 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
                     className="bg-black/50 border border-green-500/30 rounded px-3 py-1 text-green-400 text-sm focus:border-green-500 focus:outline-none"
                   >
                     <option value="All">All</option>
-                    {[...new Set(SAMPLE_QUESTIONS.map(q => q.category))].map(cat => (
+                    {[...new Set(availableChallenges.map(q => q.category))].map(cat => (
                       <option key={cat} value={cat}>{cat}</option>
                     ))}
                   </select>
@@ -765,7 +816,7 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
                     className="bg-black/50 border border-green-500/30 rounded px-3 py-1 text-green-400 text-sm focus:border-green-500 focus:outline-none"
                   >
                     <option value="All">All</option>
-                    {[...new Set(SAMPLE_QUESTIONS.map(q => q.difficulty))].map(diff => (
+                    {[...new Set(availableChallenges.map(q => q.difficulty))].map(diff => (
                       <option key={diff} value={diff}>{diff}</option>
                     ))}
                   </select>
@@ -773,7 +824,7 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
               </div>
               <div className="space-y-4">
                 {Object.entries(
-                  SAMPLE_QUESTIONS
+                  availableChallenges
                     .filter(q => (categoryFilter === 'All' || q.category === categoryFilter) &&
                                  (difficultyFilter === 'All' || q.difficulty === difficultyFilter))
                     .reduce((acc, q) => {
