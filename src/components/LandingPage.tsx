@@ -227,19 +227,13 @@ const HackerTerminal = () => {
 };
 
 // --- 5. MISSION OBJECTIVES COMPONENT ---
-const MissionCard = ({ 
-  icon: Icon, 
-  title, 
-  desc, 
-  tags, 
-  delay 
-}: { 
-  icon: any, 
-  title: string, 
-  desc: string, 
-  tags: string[], 
-  delay: number 
-}) => (
+const MissionCard: React.FC<{
+  icon: any;
+  title: string;
+  desc: string;
+  tags: string[];
+  delay: number;
+}> = ({ icon: Icon, title, desc, tags, delay }) => (
   <ScrollReveal delay={delay}>
     <div className="relative group h-full">
       <div className="absolute -inset-0.5 bg-gradient-to-r from-green-500 to-blue-500 rounded-lg blur opacity-0 group-hover:opacity-30 transition duration-500"></div>
@@ -284,7 +278,7 @@ const MissionCard = ({
 );
 
 // --- 6. MAIN LANDING PAGE ---
-export function LandingPage() {
+export const LandingPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   if (loading) {

@@ -57,25 +57,43 @@ export const subscribeToTeamNotes = (
 ) => {
   if (!isSupabaseConfigured) return () => {};
 
-  const query = supabase
-    .from('team_notes')
-    .select('*')
-    .eq('team_id', teamId)
-    .order('created_at', { ascending: false });
+  const fetchNotes = async () => {
+    const query = supabase
+      .from('team_notes')
+      .select('*')
+      .eq('team_id', teamId)
+      .order('created_at', { ascending: false });
 
-  if (challengeId) {
-    query.eq('challenge_id', challengeId);
-  }
+    if (challengeId) {
+      query.eq('challenge_id', challengeId);
+    }
 
-  return query.on('postgres_changes', {
-    event: '*',
-    schema: 'public',
-    table: 'team_notes',
-    filter: challengeId ? `team_id=eq.${teamId},challenge_id=eq.${challengeId}` : `team_id=eq.${teamId}`,
-  }, (payload) => {
-    // Re-fetch notes after any change
-    query.then(({ data }) => {
-      if (data) callback(data);
-    });
-  });
+    const { data } = await query;
+    if (data) callback(data);
+  };
+
+  const channelName = challengeId
+    ? `team_notes:${teamId}:${challengeId}`
+    : `team_notes:${teamId}`;
+
+  const channel = supabase.channel(channelName);
+
+  channel
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'team_notes',
+        filter: challengeId ? `team_id=eq.${teamId},challenge_id=eq.${challengeId}` : `team_id=eq.${teamId}`,
+      },
+      () => {
+        fetchNotes();
+      }
+    )
+    .subscribe();
+
+  return () => {
+    channel.unsubscribe();
+  };
 };

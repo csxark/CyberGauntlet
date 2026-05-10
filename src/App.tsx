@@ -5,6 +5,7 @@ import { AlertTriangle } from 'lucide-react';
 import { LandingPage } from './components/LandingPage';
 import { ChallengePage } from './components/ChallengePage';
 import { Leaderboard } from './components/Leaderboard';
+import AdminDashboard from './components/AdminDashboard';
 
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -99,7 +100,9 @@ function AppRoutes() {
         element={
           user ? (
             <ChallengePage
-              user={user}
+              teamId={user.id}
+              teamName={user.user_metadata?.full_name || user.email?.split('@')[0] || 'Player'}
+              leaderName={user.user_metadata?.full_name || user.email?.split('@')[0] || 'Player'}
               onLogout={async () => {
                 await supabase.auth.signOut();
               }}
