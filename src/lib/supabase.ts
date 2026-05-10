@@ -37,6 +37,7 @@ export interface LeaderboardEntry {
   created_at: string;
   category?: string;
   difficulty?: string;
+  points?: number;
 }
 
 export interface TeamNote {

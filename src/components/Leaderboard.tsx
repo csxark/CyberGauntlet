@@ -114,7 +114,10 @@ export function Leaderboard({ currentTeamName, questionFilter }: LeaderboardProp
         const newRanks = new Map<string, number>();
         const newRankChanges = new Map<string, RankChange>();
 
-        sortedTeams.forEach((team, idx) => {
+        // Sort scores locally for rank calculation (same logic as sortedTeams)
+        const localSorted = [...scores].sort((a, b) => b.total_points - a.total_points);
+
+        localSorted.forEach((team, idx) => {
           const newRank = idx + 1;
           newRanks.set(team.team_name, newRank);
 

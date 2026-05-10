@@ -137,6 +137,16 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
   const [currentEvent, setCurrentEvent] = useState<Event | null>(null);
   const [availableChallenges, setAvailableChallenges] = useState<Question[]>(SAMPLE_QUESTIONS); // Initialize with hardcoded, then fetch from DB
 
+  // Team notes state
+  const [teamNotes, setTeamNotes] = useState<TeamNote[]>([]);
+  const [newNote, setNewNote] = useState('');
+  const [editingNote, setEditingNote] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState('');
+
+  // Challenge browser filter state
+  const [categoryFilter, setCategoryFilter] = useState('All');
+  const [difficultyFilter, setDifficultyFilter] = useState('All');
+
   // Fetch challenges from database
   useEffect(() => {
     const fetchChallenges = async () => {
