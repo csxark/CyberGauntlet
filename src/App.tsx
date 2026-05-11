@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, Link } from 'react-router-dom';
 import { AlertTriangle } from 'lucide-react';
 
 import { LandingPage } from './components/LandingPage';
+import DocsPage from './components/DocsPage';
 import { ChallengePage } from './components/ChallengePage';
 import { Leaderboard } from './components/Leaderboard';
 import AdminDashboard from './components/AdminDashboard';
@@ -58,6 +59,7 @@ function AppRoutes() {
       {/* Public routes */}
       <Route path="/" element={<LandingPage />} />
       <Route path="/auth" element={<Login />} />
+      <Route path="/docs" element={<DocsPage />} />
       <Route path="/leader" element={<Leaderboard/>}/>
 
       {/* Protected dashboard */}
