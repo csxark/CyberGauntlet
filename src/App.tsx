@@ -82,11 +82,11 @@ function AppRoutes() {
         }
       />
 
-      {/* Protected admin dashboard */}
+      {/* Protected admin dashboard — requires profiles.role = 'admin' */}
       <Route
         path="/admin"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute adminOnly>
             <AdminDashboard
               onLogout={async () => {
                 await supabase.auth.signOut();
