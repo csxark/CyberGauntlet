@@ -133,7 +133,7 @@ interface SectionData {
   body: React.ReactNode;
 }
 
-type SectionKey = 'fundamentals' | 'strategy' | 'capabilities' | 'crypto' | 'protocols';
+type SectionKey = 'fundamentals' | 'strategy' | 'capabilities' | 'crypto' | 'protocols' | 'best_practices';
 
 const ScrollReveal: React.FC<ScrollRevealProps> = ({ children, delay = 0 }) => {
   return (
@@ -246,14 +246,64 @@ export default function DocsPage() {
             </div>
           </section>
 
-          {/* RESTORED SECTION 3: Cryptography Fundamentals */}
+          {/* THEORETICAL FOUNDATIONS */}
           <section>
              <h3 className="text-green-400 font-bold text-lg mb-4 flex items-center gap-2 border-b border-green-500/30 pb-2">
-               <Key className="w-5 h-5" /> 3. Cryptography Fundamentals
+               <Shield className="w-5 h-5" /> 3. Theoretical Foundations of Security
             </h3>
-             <p className="text-sm text-gray-400 mb-4">Cryptography is the science of writing in secret code. It is the primary tool used to implement confidentiality and integrity.</p>
-             <div className="space-y-4">
-               <div className="flex gap-4 items-start bg-gray-900/40 p-4 rounded border border-gray-700">
+             <p className="text-sm text-gray-400 mb-4">Understanding the theory behind security decisions helps engineers design systems that are robust against strong adversaries. Below are core theoretical concepts that inform practical controls.</p>
+
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
+               <div className="bg-gray-900/40 p-5 rounded border border-green-500/10">
+                 <h4 className="text-white font-bold mb-2">Security Models</h4>
+                 <p className="text-xs text-gray-400 mb-2 leading-relaxed">Formal models describe allowed flows and system states. Examples:</p>
+                 <ul className="text-xs text-gray-400 pl-4 list-disc space-y-1">
+                   <li><strong>Bell-LaPadula:</strong> Enforces confidentiality with lattice-based labels.</li>
+                   <li><strong>Biba:</strong> Enforces integrity using reverse lattice rules.</li>
+                   <li><strong>Clark-Wilson:</strong> Ensures transaction integrity with well-formed transactions and separation of duties.</li>
+                 </ul>
+               </div>
+
+               <div className="bg-gray-900/40 p-5 rounded border border-green-500/10">
+                 <h4 className="text-white font-bold mb-2">Adversary & Threat Models</h4>
+                 <p className="text-xs text-gray-400 mb-2 leading-relaxed">Define attacker capabilities and goals before designing controls. Consider:</p>
+                 <ul className="text-xs text-gray-400 pl-4 list-disc space-y-1">
+                   <li>Passive vs. active attackers</li>
+                   <li>Outsider vs. insider threat</li>
+                   <li>Computational bounds (polynomial-time adversaries), network access, and supply-chain influence</li>
+                 </ul>
+               </div>
+
+               <div className="bg-gray-900/40 p-5 rounded border border-green-500/10">
+                 <h4 className="text-white font-bold mb-2">Information Theory & Entropy</h4>
+                 <p className="text-xs text-gray-400 mb-2 leading-relaxed">Entropy quantifies unpredictability. High-entropy keys and nonces are essential. Key length determines brute-force feasibility; randomness sources must be audited.</p>
+               </div>
+             </div>
+
+             <div className="mt-6 bg-gray-900/30 p-4 rounded border border-gray-800">
+               <h4 className="text-white font-bold mb-2 text-sm">Threat Modeling & Attack Surface</h4>
+               <p className="text-xs text-gray-400 leading-relaxed">Use STRIDE, PASTA, or attack trees to enumerate threats. Map assets, entry points, trust boundaries, and likely attacker paths. Minimizing attack surface reduces risk exposure.</p>
+             </div>
+
+             <div className="mt-6 bg-gray-900/30 p-4 rounded border border-gray-800">
+               <h4 className="text-white font-bold mb-2 text-sm">Formal Methods & Assurance</h4>
+               <p className="text-xs text-gray-400 leading-relaxed">Formal verification, model checking, and type systems provide mathematical assurance that code adheres to specifications. While costly, they are appropriate for high-assurance components (crypto libs, access-control).</p>
+             </div>
+
+             <div className="mt-6 bg-gray-900/30 p-4 rounded border border-gray-800">
+               <h4 className="text-white font-bold mb-2 text-sm">Risk, Controls & Metrics</h4>
+               <p className="text-xs text-gray-400 leading-relaxed">Risk = Threat x Vulnerability x Impact. Choose controls that reduce one or more factors. Track metrics: Mean Time to Detect (MTTD), Mean Time to Respond (MTTR), and residual risk estimates.</p>
+             </div>
+           </section>
+
+           {/* RESTORED SECTION 3: Cryptography Fundamentals */}
+           <section>
+              <h3 className="text-green-400 font-bold text-lg mb-4 flex items-center gap-2 border-b border-green-500/30 pb-2">
+                <Key className="w-5 h-5" /> 3. Cryptography Fundamentals
+             </h3>
+              <p className="text-sm text-gray-400 mb-4">Cryptography is the science of writing in secret code. It is the primary tool used to implement confidentiality and integrity.</p>
+              <div className="space-y-4">
+                <div className="flex gap-4 items-start bg-gray-900/40 p-4 rounded border border-gray-700">
                   <div className="w-8 h-8 rounded bg-gray-800 flex items-center justify-center shrink-0 text-white font-bold">A</div>
                   <div>
                     <h4 className="text-white font-bold text-sm">Symmetric Encryption (Private-Key)</h4>
@@ -625,6 +675,81 @@ export default function DocsPage() {
                 "> [INFO] System is operating at 100% efficiency."
               ]}
            />
+        </div>
+      )
+    },
+
+    // =========================================================================
+    // 4. HARDENING & BEST PRACTICES
+    // =========================================================================
+    best_practices: {
+      title: 'HARDENING & BEST PRACTICES',
+      subtitle: 'Operational hygiene for resilient systems',
+      body: (
+        <div className="space-y-10 text-gray-300">
+          <section>
+            <h3 className="text-green-400 font-bold text-lg mb-3 flex items-center gap-2 border-b border-green-500/30 pb-2">
+              <Layers className="w-5 h-5" /> 1. Secure SDLC & Code Hygiene
+            </h3>
+            <p className="text-sm text-gray-400 leading-relaxed mb-3">
+              Embed security into the development lifecycle: threat modeling, secure design reviews, dependency scanning, code reviews, and automated testing. Shift-left practices reduce costly vulnerabilities later in production.
+            </p>
+          </section>
+
+          <section>
+            <h3 className="text-green-400 font-bold text-lg mb-3 flex items-center gap-2 border-b border-green-500/30 pb-2">
+              <Server className="w-5 h-5" /> 2. Patch & Vulnerability Management
+            </h3>
+            <p className="text-sm text-gray-400 leading-relaxed mb-3">
+              Maintain an aggressive but safe patch cadence. Prioritize CVSS-critical fixes, use canary deployments for large changes, and run regular external and internal vulnerability scans with remediation SLAs.
+            </p>
+          </section>
+
+          <section>
+            <h3 className="text-green-400 font-bold text-lg mb-3 flex items-center gap-2 border-b border-green-500/30 pb-2">
+              <UserCheck className="w-5 h-5" /> 3. Least Privilege & Access Controls
+            </h3>
+            <p className="text-sm text-gray-400 leading-relaxed mb-3">
+              Grant the minimum access required. Implement role-based access, short-lived credentials, and continuous authorization checks. Revoke access promptly when roles change.
+            </p>
+          </section>
+
+          <section>
+            <h3 className="text-green-400 font-bold text-lg mb-3 flex items-center gap-2 border-b border-green-500/30 pb-2">
+              <Network className="w-5 h-5" /> 4. Network Segmentation & Microsegmentation
+            </h3>
+            <p className="text-sm text-gray-400 leading-relaxed mb-3">
+              Keep critical assets isolated. Use segmentation to contain breaches and apply egress filtering. Microsegmentation limits east-west movement inside the data center and cloud.
+            </p>
+          </section>
+
+          <section>
+            <h3 className="text-green-400 font-bold text-lg mb-3 flex items-center gap-2 border-b border-green-500/30 pb-2">
+              <AlertTriangle className="w-5 h-5" /> 5. Incident Response & Playbooks
+            </h3>
+            <p className="text-sm text-gray-400 leading-relaxed mb-3">
+              Prepare playbooks for common incidents: ransomware, data exfiltration, credential compromise. Define roles, communication trees, and recovery steps. Practice with tabletop exercises quarterly.
+            </p>
+            <div className="bg-gray-900/30 p-4 rounded border border-gray-800 text-xs">
+              <strong className="text-white">Quick IR Checklist:</strong>
+              <ul className="list-disc pl-5 text-gray-400 mt-2 space-y-1">
+                <li>Identify scope & affected systems</li>
+                <li>Isolate impacted hosts (preserve forensics)</li>
+                <li>Rotate credentials & revoke sessions</li>
+                <li>Assess backups & begin restoration</li>
+                <li>Post-incident review and hardening tasks</li>
+              </ul>
+            </div>
+          </section>
+
+          <section>
+            <h3 className="text-green-400 font-bold text-lg mb-3 flex items-center gap-2 border-b border-green-500/30 pb-2">
+              <Users className="w-5 h-5" /> 6. Continuous Monitoring & Threat Hunting
+            </h3>
+            <p className="text-sm text-gray-400 leading-relaxed">
+              Combine automated detection with human-led threat hunting. Monitor telemetry (logs, netflow, EDR) and maintain a practice of proactive hunting to find stealthy adversaries before they escalate.
+            </p>
+          </section>
         </div>
       )
     },
@@ -1005,6 +1130,12 @@ export default function DocsPage() {
                 label="Cryptography" 
                 icon={Lock} 
                 onClick={() => setActiveSection('crypto')} 
+              />
+              <NavItem 
+                active={activeSection === 'best_practices'} 
+                label="Hardening" 
+                icon={Layers} 
+                onClick={() => setActiveSection('best_practices')} 
               />
               <NavItem 
                 active={activeSection === 'protocols'} 
