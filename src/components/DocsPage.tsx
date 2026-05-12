@@ -618,68 +618,134 @@ export default function DocsPage() {
       body: (
         <div className="space-y-12">
           <p className="text-gray-300 leading-relaxed">
-             Our system runs on a modular architecture. Depending on the threat environment, specific modules can be activated to provide layered defense.
-             Each module operates independently but shares telemetry with the central core.
+             Our system runs on a modular architecture. Modules are composable and provide layered defense: prevention, detection, response, and recovery. They share telemetry with the central core and can be tuned for sensitivity by risk profile.
           </p>
 
-          <div className="bg-gray-900/40 p-6 rounded border border-green-500/20 hover:bg-gray-900/60 transition-all">
-             <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                <Eye className="text-green-500 w-6 h-6" /> 1. Threat Detection (MDR)
-             </h3>
-             <p className="text-sm text-gray-400 mb-4 leading-relaxed">
-                Managed Detection and Response (MDR) goes beyond simple antivirus software. Antivirus looks for "signatures"—known bad files. But hackers write new code every day.
-             </p>
-             <p className="text-sm text-gray-400 mb-4 leading-relaxed">
-                <strong>How it works:</strong> Our MDR system uses behavioral analysis. It doesn't care if a file <em>looks</em> safe; it watches what the file <em>does</em>. If a calculator app suddenly tries to open an internet connection to an external IP, MDR kills the process instantly.
-             </p>
-             <div className="grid grid-cols-2 gap-4 text-xs mt-4 border-t border-gray-700 pt-4">
-               <div>
-                 <strong className="text-white block">EDR (Endpoint)</strong>
-                 <span className="text-gray-500">Watches laptops & servers.</span>
-               </div>
-               <div>
-                 <strong className="text-white block">NDR (Network)</strong>
-                 <span className="text-gray-500">Watches traffic flow.</span>
-               </div>
-             </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-gray-900/40 p-6 rounded border border-green-500/20 hover:bg-gray-900/60 transition-all">
+               <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                  <Eye className="text-green-500 w-6 h-6" /> Threat Detection & Response (MDR / EDR / NDR)
+               </h3>
+               <p className="text-sm text-gray-400 mb-3 leading-relaxed">
+                  Combines endpoint, network, and cloud telemetry to detect anomalies. Uses behavioral models, signature feeds, and threat intelligence for prioritization.
+               </p>
+               <ul className="text-xs text-gray-400 list-disc pl-5 space-y-1">
+                 <li>Behavioral analytics and anomaly detection.</li>
+                 <li>Automated containment for high-confidence threats (quarantine, process kill).</li>
+                 <li>Playbook-driven response and integration with SOAR.</li>
+               </ul>
+            </div>
+
+            <div className="bg-gray-900/40 p-6 rounded border border-green-500/20 hover:bg-gray-900/60 transition-all">
+               <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                  <Lock className="text-green-500 w-6 h-6" /> Identity, Access & Privilege Management (IAM / PAM)
+               </h3>
+               <p className="text-sm text-gray-400 mb-3 leading-relaxed">
+                  Centralized identity with strong authentication, policy-based authorization and session management. Reduces attack surface by enforcing least privilege and just-in-time access.
+               </p>
+               <ul className="text-xs text-gray-400 list-disc pl-5 space-y-1">
+                 <li>Role-based access and attribute-based policies (RBAC / ABAC).</li>
+                 <li>Privileged Access Management (PAM) for highly sensitive accounts.</li>
+                 <li>Short-lived credentials, just-in-time (JIT) access, and session recording for audits.</li>
+               </ul>
+            </div>
+
+            <div className="bg-gray-900/40 p-6 rounded border border-green-500/20 hover:bg-gray-900/60 transition-all">
+               <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                  <Database className="text-green-500 w-6 h-6" /> Data Protection & DLP
+               </h3>
+               <p className="text-sm text-gray-400 mb-3 leading-relaxed">
+                  Controls that prevent exfiltration and enforce data handling policies across endpoints, email, cloud storage, and databases.
+               </p>
+               <ul className="text-xs text-gray-400 list-disc pl-5 space-y-1">
+                 <li>Content inspection, tokenization, and encryption for sensitive fields.</li>
+                 <li>Policy-driven blocking or quarantine of risky data transfers.</li>
+                 <li>Context-aware DLP: device posture, user role, destination.
+                 </li>
+               </ul>
+            </div>
+
+            <div className="bg-gray-900/40 p-6 rounded border border-green-500/20 hover:bg-gray-900/60 transition-all">
+               <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                  <FileCode className="text-green-500 w-6 h-6" /> Vulnerability Management & Secure Configuration
+               </h3>
+               <p className="text-sm text-gray-400 mb-3 leading-relaxed">
+                  Continuous scanning, inventory, and risk-based prioritization of vulnerabilities. Includes IaC scanning and drift detection for cloud configurations.
+               </p>
+               <ul className="text-xs text-gray-400 list-disc pl-5 space-y-1">
+                 <li>Automated scanning (SAST/DAST/IAST) and patch orchestration.</li>
+                 <li>Infrastructure-as-Code (IaC) policy enforcement and CIS benchmarking.</li>
+                 <li>Risk-based remediation SLAs aligned with business impact.</li>
+               </ul>
+            </div>
+
+            <div className="bg-gray-900/40 p-6 rounded border border-green-500/20 hover:bg-gray-900/60 transition-all">
+               <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                  <Target className="text-green-500 w-6 h-6" /> Red Teaming, Purple Teaming & Adversary Simulation
+               </h3>
+               <p className="text-sm text-gray-400 mb-3 leading-relaxed">
+                  Emulate adversary TTPs to test defenses and improve detection fidelity. Purple teaming bridges gap between red and blue teams to iterate on rules and playbooks.
+               </p>
+               <ul className="text-xs text-gray-400 list-disc pl-5 space-y-1">
+                 <li>Controlled adversary simulation and tabletop exercises.</li>
+                 <li>Integration of findings into detection rule tuning and patching prioritization.</li>
+               </ul>
+            </div>
+
+            <div className="bg-gray-900/40 p-6 rounded border border-green-500/20 hover:bg-gray-900/60 transition-all">
+               <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                  <Server className="text-green-500 w-6 h-6" /> Cloud & Platform Security
+               </h3>
+               <p className="text-sm text-gray-400 mb-3 leading-relaxed">
+                  Secure cloud workloads using least-privilege IAM, secure service-to-service auth, workload isolation, and runtime protection for containers and serverless functions.
+               </p>
+               <ul className="text-xs text-gray-400 list-disc pl-5 space-y-1">
+                 <li>Workload identity (no embedded long-lived secrets) and ephemeral credentials.</li>
+                 <li>Cloud posture management and runtime EDR for container orchestration platforms.</li>
+               </ul>
+            </div>
+
+            <div className="bg-gray-900/40 p-6 rounded border border-green-500/20 hover:bg-gray-900/60 transition-all">
+               <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                  <Layers className="text-green-500 w-6 h-6" /> Deception, Honeytokens & Supply Chain Protections
+               </h3>
+               <p className="text-sm text-gray-400 mb-3 leading-relaxed">
+                  Use deception to detect lateral movement early. Hardening the supply chain reduces risk from third-party components and builds resiliency into deployment pipelines.
+               </p>
+               <ul className="text-xs text-gray-400 list-disc pl-5 space-y-1">
+                 <li>Deploy honeytokens and decoy services to trip early alerts.</li>
+                 <li>Supply-chain scanning, SBOMs, and signed artifacts for provenance.</li>
+               </ul>
+            </div>
+
+            <div className="bg-gray-900/40 p-6 rounded border border-green-500/20 hover:bg-gray-900/60 transition-all">
+               <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                  <Users className="text-green-500 w-6 h-6" /> Automation & Orchestration (SOAR)
+               </h3>
+               <p className="text-sm text-gray-400 mb-3 leading-relaxed">
+                  Automate repetitive tasks, enrich alerts with context, and orchestrate containment actions. SOAR improves analyst throughput while preserving human-in-the-loop oversight.
+               </p>
+            </div>
+
           </div>
 
-          <div className="bg-gray-900/40 p-6 rounded border border-green-500/20 hover:bg-gray-900/60 transition-all">
-             <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                <Lock className="text-green-500 w-6 h-6" /> 2. Identity & Access (IAM)
-             </h3>
-             <p className="text-sm text-gray-400 mb-4 leading-relaxed">
-                "Identity is the new perimeter." We utilize Zero Trust Network Access (ZTNA). Even after you log in with your password, you are not inherently trusted.
-             </p>
-             <p className="text-sm text-gray-400 mb-4 leading-relaxed">
-                <strong>Conditional Access:</strong> The system checks context: Is your laptop patched? Are you logging in from a usual location? Authentication happens continuously.
-             </p>
-          </div>
+          <CodeBlock 
+            command="./run_diagnostics.sh --module=ALL" 
+            lines={[
+              "> [INIT] Checking Endpoint Sensors...",
+              "> [OK] 450/450 Nodes Reporting",
+              "> [INIT] Verifying Identity Provider...",
+              "> [OK] Zero Trust Policy: ENFORCED",
+              "> [INFO] System is operating at 100% efficiency."
+            ]}
+          />
 
-          <div className="bg-gray-900/40 p-6 rounded border border-green-500/20 hover:bg-gray-900/60 transition-all">
-             <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                <Database className="text-green-500 w-6 h-6" /> 3. Data Vault (DLP)
-             </h3>
-             <p className="text-sm text-gray-400 mb-4 leading-relaxed">
-                Data Loss Prevention (DLP) ensures sensitive information stays inside the organization. If a user tries to upload a file containing Credit Card numbers to a public Dropbox, the transfer is blocked.
-             </p>
-          </div>
-
-           <CodeBlock 
-              command="./run_diagnostics.sh --module=ALL" 
-              lines={[
-                "> [INIT] Checking Endpoint Sensors...",
-                "> [OK] 450/450 Nodes Reporting",
-                "> [INIT] Verifying Identity Provider...",
-                "> [OK] Zero Trust Policy: ENFORCED",
-                "> [INFO] System is operating at 100% efficiency."
-              ]}
-           />
         </div>
       )
     },
 
-    // =========================================================================
+    
+// =========================================================================
     // 4. HARDENING & BEST PRACTICES
     // =========================================================================
     best_practices: {
@@ -996,74 +1062,117 @@ export default function DocsPage() {
       subtitle: 'Compliance, Trust, and Resilience.',
       body: (
         <div className="space-y-8">
-           <div className="border-l-4 border-yellow-500 bg-yellow-900/10 p-6">
-             <h3 className="text-xl font-bold text-yellow-500 mb-2">ZERO TRUST MANDATE</h3>
-             <p className="text-gray-300 text-sm leading-relaxed">
-               The core protocol of this system is <strong>Zero Trust</strong>. In a traditional network, once you VPN in, you can access everything. In our system, the network assumes you are compromised. Every request—whether it is reading a file or opening a database—requires a fresh authentication token.
-             </p>
-           </div>
-           
-           <div className="space-y-6">
-             <div className="flex gap-4 items-start border-b border-gray-800 pb-6">
-               <div className="w-12 h-12 rounded bg-gray-900 border border-green-500/30 flex items-center justify-center shrink-0 text-green-500 font-bold font-mono text-xl">01</div>
-               <div>
-                 <h4 className="text-white font-bold text-lg">Resilience Over Defense</h4>
-                 <p className="text-gray-400 text-sm mt-2 leading-relaxed">
-                   <strong>Why?</strong> No wall is high enough to keep out a determined nation-state actor.
-                   <br/>
-                   <strong>The Protocol:</strong> Instead of focusing 100% of resources on keeping hackers out, we allocate 50% to <strong>Incident Response</strong>. We ensure that when a system goes down, we have "immutable backups" (backups that cannot be deleted or encrypted) ready to restore operations within minutes, not days.
-                 </p>
-               </div>
-             </div>
 
-             <div className="flex gap-4 items-start border-b border-gray-800 pb-6">
-               <div className="w-12 h-12 rounded bg-gray-900 border border-green-500/30 flex items-center justify-center shrink-0 text-green-500 font-bold font-mono text-xl">02</div>
-               <div>
-                 <h4 className="text-white font-bold text-lg">Ethical Innovation</h4>
-                 <p className="text-gray-400 text-sm mt-2 leading-relaxed">
-                   <strong>Why?</strong> AI models can hallucinate or be poisoned by bad data.
-                   <br/>
-                   <strong>The Protocol:</strong> Any AI used in security (like our Threat Detection bots) must have human oversight. We do not allow AI to automatically delete user data without a human analyst confirming the threat first. This prevents "false positives" from destroying legitimate business operations.
-                 </p>
-               </div>
-             </div>
+          <div className="border-l-4 border-yellow-500 bg-yellow-900/10 p-6">
+            <h3 className="text-xl font-bold text-yellow-500 mb-2">ZERO TRUST MANDATE</h3>
+            <p className="text-gray-300 text-sm leading-relaxed">
+              The core protocol of this system is <strong>Zero Trust</strong>. In a traditional network, once you VPN in, you can access everything. In our system, the network assumes you are compromised. Every request—whether it is reading a file or opening a database—requires a fresh authentication token, continuous authorization evaluation, and least-privilege enforcement.
+            </p>
+          </div>
 
-             <div className="flex gap-4 items-start border-b border-gray-800 pb-6">
-               <div className="w-12 h-12 rounded bg-gray-900 border border-green-500/30 flex items-center justify-center shrink-0 text-green-500 font-bold font-mono text-xl">03</div>
-               <div>
-                 <h4 className="text-white font-bold text-lg">Regulatory Alignment</h4>
-                 <p className="text-gray-400 text-sm mt-2 leading-relaxed">
-                   <strong>Why?</strong> Laws like GDPR and CCPA impose massive fines for mishandling user data.
-                   <br/>
-                   <strong>The Protocol:</strong> All personal data is pseudonymized. We conduct quarterly Privacy Impact Assessments (PIA) to ensure that we are not collecting more data than we strictly need to operate.
-                 </p>
-               </div>
-             </div>
-           </div>
-           
-           <div className="mt-8 bg-black/40 p-4 rounded border border-green-500/20">
-              <h5 className="text-green-500 font-bold text-sm mb-2"> <CheckSquare className="inline w-4 h-4 mr-2"/> COMPLIANCE CHECKLIST</h5>
-              <div className="space-y-2">
-                <label className="flex items-center space-x-3 cursor-pointer group">
-                  <div className="w-4 h-4 border border-gray-600 rounded flex items-center justify-center group-hover:border-green-500 transition-colors">
-                     <div className="w-2.5 h-2.5 bg-green-500 rounded-sm"></div>
-                  </div>
-                  <span className="text-gray-400 text-sm group-hover:text-white transition-colors">Multi-Factor Authentication (MFA) Enforced</span>
-                </label>
-                <label className="flex items-center space-x-3 cursor-pointer group">
-                  <div className="w-4 h-4 border border-gray-600 rounded flex items-center justify-center group-hover:border-green-500 transition-colors">
-                     <div className="w-2.5 h-2.5 bg-green-500 rounded-sm"></div>
-                  </div>
-                  <span className="text-gray-400 text-sm group-hover:text-white transition-colors">Data Encryption Standards Met</span>
-                </label>
-                <label className="flex items-center space-x-3 cursor-pointer group">
-                  <div className="w-4 h-4 border border-gray-600 rounded flex items-center justify-center group-hover:border-green-500 transition-colors">
-                     <div className="w-2.5 h-2.5 bg-green-500 rounded-sm"></div>
-                  </div>
-                  <span className="text-gray-400 text-sm group-hover:text-white transition-colors">Third-Party Risk Assessment Complete</span>
-                </label>
+          <div className="space-y-6">
+            <div className="flex gap-4 items-start border-b border-gray-800 pb-6">
+              <div className="w-12 h-12 rounded bg-gray-900 border border-green-500/30 flex items-center justify-center shrink-0 text-green-500 font-bold font-mono text-xl">01</div>
+              <div>
+                <h4 className="text-white font-bold text-lg">Resilience Over Defense</h4>
+                <p className="text-gray-400 text-sm mt-2 leading-relaxed">
+                  <strong>Why?</strong> No wall is high enough to keep out a determined adversary.
+                  <br/>
+                  <strong>The Protocol:</strong> Instead of concentrating resources only on prevention, maintain robust incident response (IR), immutable backups, and recovery playbooks so operations can be restored quickly and safely.
+                </p>
               </div>
-           </div>
+            </div>
+
+            <div className="flex gap-4 items-start border-b border-gray-800 pb-6">
+              <div className="w-12 h-12 rounded bg-gray-900 border border-green-500/30 flex items-center justify-center shrink-0 text-green-500 font-bold font-mono text-xl">02</div>
+              <div>
+                <h4 className="text-white font-bold text-lg">Ethical Innovation</h4>
+                <p className="text-gray-400 text-sm mt-2 leading-relaxed">
+                  AI assists analysts but does not replace judgement. Threat scoring, automated triage, and suggested containment actions require human validation before destructive remediation is permitted.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-4 items-start border-b border-gray-800 pb-6">
+              <div className="w-12 h-12 rounded bg-gray-900 border border-green-500/30 flex items-center justify-center shrink-0 text-green-500 font-bold font-mono text-xl">03</div>
+              <div>
+                <h4 className="text-white font-bold text-lg">Regulatory Alignment</h4>
+                <p className="text-gray-400 text-sm mt-2 leading-relaxed">
+                  Map technical controls to frameworks (NIST CSF, ISO 27001, GDPR). Maintain data inventories, Data Processing Agreements (DPAs) for third parties, and documented retention/deletion policies.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Expanded Protocol Details */}
+          <section className="space-y-6">
+            <h4 className="text-green-400 font-bold text-lg mb-2">Secure Communication & Identity Protocols</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-gray-900/30 p-4 rounded border border-gray-800 text-sm">
+                <strong>TLS & Transport:</strong>
+                <p className="text-gray-400 text-xs mt-2">Use TLS 1.3 where possible. Configure strong cipher suites, enable forward secrecy, and enforce HSTS for web services. Prefer mutual TLS (mTLS) for service-to-service authentication in internal networks.</p>
+              </div>
+              <div className="bg-gray-900/30 p-4 rounded border border-gray-800 text-sm">
+                <strong>Authentication Standards:</strong>
+                <p className="text-gray-400 text-xs mt-2">Adopt OAuth2/OIDC for delegated access and SAML for legacy SSO where required. Always use short-lived tokens, refresh token rotation, and audience-scoped tokens to limit misuse.</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-gray-900/30 p-4 rounded border border-gray-800 text-sm">
+                <strong>PKI & Certificate Management:</strong>
+                <p className="text-gray-400 text-xs mt-2">Automate certificate issuance and rotation. Track certificate inventories, monitor expiry, and avoid self-signed certs in production. Use Hardware Security Modules (HSMs) for root key protection when possible.</p>
+              </div>
+              <div className="bg-gray-900/30 p-4 rounded border border-gray-800 text-sm">
+                <strong>API Security:</strong>
+                <p className="text-gray-400 text-xs mt-2">Protect APIs with gateways, rate limits, schema validation, and strong auth. Validate inputs, implement least-privilege scopes, and log requests for auditing and forensic analysis.</p>
+              </div>
+            </div>
+          </section>
+
+          <section className="space-y-6">
+            <h4 className="text-green-400 font-bold text-lg mb-2">Operational Protocols for Data & Logs</h4>
+            <div className="bg-gray-900/30 p-4 rounded border border-gray-800 text-sm">
+              <strong>Auditability:</strong>
+              <p className="text-gray-400 text-xs mt-2">Maintain tamper-evident audit logs with time-synchronization (NTP) and write-once storage where possible. Include identity, action, target, and outcome in each log entry to support investigations.</p>
+            </div>
+            <div className="bg-gray-900/30 p-4 rounded border border-gray-800 text-sm">
+              <strong>Data Handling:</strong>
+              <p className="text-gray-400 text-xs mt-2">Apply classification-driven controls: encryption at rest/in transit, tokenization for sensitive fields, and minimization—collect only what is necessary. Define retention limits and secure deletion procedures.</p>
+            </div>
+
+            <div className="bg-gray-900/30 p-4 rounded border border-gray-800 text-sm">
+              <strong>Secure DNS & Email:</strong>
+              <p className="text-gray-400 text-xs mt-2">Harden DNS with DNSSEC where applicable. Evaluate DoH/DoT tradeoffs for privacy vs. enterprise visibility. Enforce SPF, DKIM, and DMARC to reduce phishing risks.</p>
+            </div>
+          </section>
+
+          <section className="space-y-6">
+            <h4 className="text-green-400 font-bold text-lg mb-2">Incident & Disclosure Protocols</h4>
+            <div className="bg-gray-900/30 p-4 rounded border border-gray-800 text-sm">
+              <strong>Incident Classification & Escalation:</strong>
+              <p className="text-gray-400 text-xs mt-2">Classify incidents by impact and confidentiality. Predefine escalation paths, legal notification triggers, and communication templates for internal and external stakeholders.</p>
+            </div>
+            <div className="bg-gray-900/30 p-4 rounded border border-gray-800 text-sm">
+              <strong>Forensics & Evidence Preservation:</strong>
+              <p className="text-gray-400 text-xs mt-2">Capture volatile data early, preserve disk images, and document chain-of-custody. Ensure forensic activities do not violate privacy or regulatory constraints.</p>
+            </div>
+          </section>
+
+          <div className="mt-8 bg-black/40 p-4 rounded border border-green-500/20">
+            <h5 className="text-green-500 font-bold text-sm mb-2"> <CheckSquare className="inline w-4 h-4 mr-2"/> PROTOCOL CHECKLIST</h5>
+            <div className="space-y-2 text-xs text-gray-300">
+              <ul className="list-disc pl-5">
+                <li>TLS 1.3 enforced where supported; weak ciphers disabled.</li>
+                <li>OAuth/OIDC for API auth; tokens are short-lived and aud-scoped.</li>
+                <li>Certificates automated and rotated; HSMs used for critical keys.</li>
+                <li>Immutable, time-synced audit logs retained per policy.</li>
+                <li>PIAs and DPIAs completed for personal data processing.</li>
+                <li>Pre-approved IR runbooks and external disclosure procedures.</li>
+              </ul>
+            </div>
+          </div>
+
         </div>
       )
     }
