@@ -43,6 +43,12 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const [showFlag, setShowFlag] = useState(false);
   const [processing, setProcessing] = useState<string|null>(null);
 
+  React.useEffect(() => {
+    if (!isSupabaseConfigured) {
+      console.error('[AdminDashboard] Supabase not configured - check VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY');
+    }
+  }, []);
+
   const flash = (text: string, ok = true) => {
     setMsg({ text, ok });
     setTimeout(() => setMsg(null), 4000);
@@ -57,6 +63,14 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
         supabase.from('challenge_submissions').select('id,title,description,category,difficulty,status,created_at,hints').order('created_at', { ascending: false }),
         supabase.from('leaderboard').select('id', { count: 'exact', head: true }).not('completed_at','is',null),
       ]);
+      if (cRes.error) {
+        console.error('Failed to fetch challenges:', cRes.error);
+        flash(`Error fetching challenges: ${cRes.error.message}`, false);
+      }
+      if (sRes.error) {
+        console.error('Failed to fetch submissions:', sRes.error);
+        flash(`Error fetching submissions: ${sRes.error.message}`, false);
+      }
       const cData = cRes.data || [];
       const sData = sRes.data || [];
       setChallenges(cData);
@@ -67,7 +81,10 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
         pendingSubmissions: sData.filter((s: Submission) => s.status === 'pending').length,
         totalLeaderboard: lRes.count || 0,
       });
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error('fetchAll error:', e);
+      flash('Error loading data', false);
+    }
     finally { setLoading(false); }
   }, []);
 
@@ -75,8 +92,18 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
 
   const invoke = async (action: string, body: object) => {
     const { data, error } = await supabase.functions.invoke('admin-challenge', { body: { action, ...body } });
-    if (error) throw new Error(error.message);
-    if (!data?.success) throw new Error(data?.error || 'Operation failed');
+    if (error) {
+      console.error('Edge function error:', error);
+      throw new Error(`Network error: ${error.message}`);
+    }
+    if (!data) {
+      console.error('No response from edge function');
+      throw new Error('No response from server');
+    }
+    if (!data.success) {
+      console.error('Function returned error:', data.error);
+      throw new Error(data.error || 'Operation failed');
+    }
     return data;
   };
 
@@ -136,7 +163,14 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
     setProcessing(s.id);
     try {
       const { data, error } = await supabase.functions.invoke('approve-challenge', { body: { submission_id: s.id } });
-      if (error || !data?.success) throw new Error(data?.error || error?.message);
+      if (error) {
+        console.error('Approve function error:', error);
+        throw new Error(`Network error: ${error.message}`);
+      }
+      if (!data?.success) {
+        console.error('Approve returned error:', data?.error);
+        throw new Error(data?.error || error?.message || 'Failed to approve');
+      }
       flash(data.message);
       fetchAll();
     } catch (e: any) { flash(e.message, false); }

@@ -75,27 +75,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   /**
-   * Logout from all devices by revoking all refresh tokens
+   * Create user profile if it doesn't exist
    */
-  const logoutAllDevices = useCallback(async () => {
+  const ensureProfileExists = useCallback(async (userId: string) => {
     try {
-      const { error } = await supabase.functions.invoke('refresh-token', {
-        body: { logout_all: true }
-      });
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', userId)
+        .single();
 
-      if (error) {
-        console.error('Error logging out all devices:', error);
-        throw error;
+      if (error && error.code === 'PGRST116') {
+        // Profile doesn't exist, create it
+        await supabase.from('profiles').insert({
+          user_id: userId,
+          team_name: null,
+          leader_name: null,
+          role: 'user',
+        });
+        console.log('Profile created for user', userId);
+      } else if (!error && data) {
+        console.log('Profile already exists for user', userId);
       }
-
-      // Clear local storage and sign out
-      localStorage.removeItem(TOKEN_STORAGE_KEY);
-      await supabase.auth.signOut();
-      
-      console.log('Logged out from all devices');
     } catch (err) {
-      console.error('Unexpected error logging out:', err);
-      throw err;
+      console.error('Error ensuring profile exists:', err);
     }
   }, []);
 
@@ -128,6 +131,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (!error && mounted) {
           setUser(session?.user ?? null);
 
+          // Ensure profile exists if user is logged in
+          if (session?.user) {
+            await ensureProfileExists(session.user.id);
+          }
+
           // If session exists, setup refresh timer
           if (session) {
             const expiresIn = session.expires_in || 900; // Default 15 min
@@ -157,7 +165,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser(session?.user ?? null);
         setLoading(false);
 
-        if (event === 'SIGNED_IN' && session) {
+        if (event === 'SIGNED_IN' && session?.user) {
+          // Ensure profile exists for new user
+          await ensureProfileExists(session.user.id);
+
           // Store refresh token on sign in
           if (session.refresh_token) {
             localStorage.setItem(TOKEN_STORAGE_KEY, session.refresh_token);
@@ -194,7 +205,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         clearInterval(refreshTimerRef.current);
       }
     };
-  }, [setupRefreshTimer]);
+  }, [setupRefreshTimer, ensureProfileExists]);
 
   return (
     <AuthContext.Provider value={{ 
