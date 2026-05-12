@@ -118,22 +118,42 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
    * Initialize auth state and setup listeners
    */
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data }) => {
-      setUser(data.session?.user ?? null);
-      setLoading(false);
-      
-      // If session exists, setup refresh timer
-      if (data.session) {
-        const expiresIn = data.session.expires_in || 900; // Default 15 min
-        setTokenExpiresIn(expiresIn);
-        setupRefreshTimer();
+    let mounted = true;
+
+    const initializeAuth = async () => {
+      try {
+        // Get initial session from local storage or auth state
+        const { data: { session }, error } = await supabase.auth.getSession();
+
+        if (!error && mounted) {
+          setUser(session?.user ?? null);
+
+          // If session exists, setup refresh timer
+          if (session) {
+            const expiresIn = session.expires_in || 900; // Default 15 min
+            setTokenExpiresIn(expiresIn);
+            setupRefreshTimer();
+          }
+
+          setLoading(false);
+        } else if (mounted) {
+          setLoading(false);
+        }
+      } catch (err) {
+        if (mounted) {
+          console.warn('Failed to initialize auth session:', err);
+          setLoading(false);
+        }
       }
-    });
+    };
+
+    initializeAuth();
 
     // Listen for auth state changes
     const { data: subscription } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (!mounted) return;
+
         setUser(session?.user ?? null);
         setLoading(false);
 
@@ -142,7 +162,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           if (session.refresh_token) {
             localStorage.setItem(TOKEN_STORAGE_KEY, session.refresh_token);
           }
-          
+
           const expiresIn = session.expires_in || 900;
           setTokenExpiresIn(expiresIn);
           setupRefreshTimer();
@@ -168,6 +188,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     // Cleanup on unmount
     return () => {
+      mounted = false;
       subscription?.subscription?.unsubscribe();
       if (refreshTimerRef.current) {
         clearInterval(refreshTimerRef.current);

@@ -91,29 +91,60 @@ export default function Login() {
 
   // --- EXISTING LOGIC PRESERVED ---
   const login = async () => {
-    setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    setLoading(false);
-
-    if (error) {
-      alert(error.message);
+    if (!email || !password) {
+      alert('Please enter both email and password');
       return;
     }
-    navigate("/challenges", { replace: true });
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        if (error.message.includes('Anonymous sign-ins')) {
+          alert('Authentication service not properly configured. Please contact support.');
+        } else {
+          alert(error.message);
+        }
+        return;
+      }
+      navigate("/challenges", { replace: true });
+    } catch (err) {
+      alert('An unexpected error occurred during login');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const signup = async () => {
+    if (!email || !password) {
+      alert('Please enter both email and password');
+      return;
+    }
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
-    if (error) alert(error.message);
-    else alert('📩 Check your email for verification');
-    setLoading(false);
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+      if (error) {
+        if (error.message.includes('Anonymous sign-ins')) {
+          alert('Authentication service not properly configured. Please contact support.');
+        } else {
+          alert(error.message);
+        }
+      } else {
+        alert('📩 Check your email for verification');
+      }
+    } catch (err) {
+      alert('An unexpected error occurred during signup');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
   // --------------------------------
 

@@ -36,90 +36,12 @@ interface Question {
   description: string;
   file_name: string;
   file_path: string;
-  correct_flag: string;
   hints: string[];
   category: string;
   difficulty: string;
 }
 
-const SAMPLE_QUESTIONS: Question[] = [
-  {
-    id: "q1",
-    title: "The Cryptographer's Dilemma",
-description: "You are a cybersecurity consultant investigating a breach at the Ministry of Digital Secrets. The " +
-  "lead cryptographer, Dr. Eliza Vance, disappeared just hours before the attack. The only thing " +
-  "she left behind was a strange, encrypted diary entry and a file on her desktop labeled " +
-  "cipher_collection.txt. Your team believes Dr. Vance was trying to leave a final, complex message before being " +
-  "abducted—a message hidden among decoys. The diary entry gives you a vital clue, but you " +
-  "must still figure out which cipher in the file holds the true flag and which ones are red herrings.",
-    file_name: "cipher_collection.txt",
-    file_path: "/challenges/q1/cipher_collection.txt",
-    correct_flag: "CG{Guvf vf gur Synt!}",
-    hints: ["This code is based on a simple rotational shift of 3 for every letter in the alphabet", "This message is encoded using Polybius square coordinates; you must first group the ciphertext by fives, then use a keyword to untangle the column order.","The decryption key for this substitution is half the alphabet, meaning the shift applied to the ciphertext is equal to the length of the shift itself."],
-    category: "Cryptography",
-    difficulty: "Intermediate"
-  },
-  {
-    "id": "q2",
-    "title": "Pair Sum Optimization",
-    "description": "You are auditing a data processing script for a university that needs to quickly count successful pairings of student IDs. You are given a large array of unique, positive, and sorted integer IDs. The university defines a successful pair as any two distinct IDs a, b in the array whose sum equals a specific target number, T. Your primary constraint is efficiency. Since the list is already sorted, you must devise an algorithm that counts all unique pairs in a single, highly optimized pass that avoids nested loops—a technique typically required for speed in large datasets.",
-    "file_name": "",
-    "file_path": "",
-    "correct_flag": "CG{TWO_POINTERS_ALGORITHM}",
-    "hints": [
-      " Since the array is sorted, set one marker (a pointer) at the first element (index 0) and the second marker at the last element (index length - 1).",
-      " At each step, you only need to calculate the sum of the elements at your two markers and compare it to T. If the sum is less than T, you must increase the sum, so move the low pointer one step inward. If the sum is greater than T, you must decrease the sum, so move the high pointer one step inward.",
-      " Your entire solution can be contained within a simple while loop that continues as long as your low pointer is less than your high pointer."
-    ],
-    "category": "Programming",
-    "difficulty": "Beginner"
-  },
-  {
-    "id": "q3",
-    "title": "The Security Key Reverser",
-    "description": "You have recovered a C program designed to validate a 10-character security key. Due to poor programming practices, the key must pass through a two-step obfuscation process before it is checked against a hardcoded secret. To find the correct final flag, you must meticulously trace the logic of the processkey function.",
-    "file_name": "security.c",
-    "file_path": "/challenges/q3/security.c",
-    "correct_flag": "CG{5E4D3A1B2C}",
-    "hints": [
-      "Swap the two halves — The key is split (A1B2C and 3D4E5) and exchanged.",
-      "Reverse the new first half in place — after swapping, reverse indices 0 through 4.",
-      "The flag is the final state of the key array after processing."
-    ],
-    "category": "Programming",
-    "difficulty": "Intermediate"
-  },
-  {
-    "id": "q4",
-    "title": "Invisible Ink Scenario",
-    "description": "You have recovered a text file, secretnote.txt, which appears to contain nothing more than a simple, innocuous sentence. When you copy and paste the text, it seems normal, but a forensic tool confirms the file size is slightly larger than expected for the visible characters. Hidden zero-width Unicode characters encode the flag.",
-    "file_name": "secretnote.txt",
-    "file_path": "/challenges/q4/secretnote.txt",
-    "correct_flag": "CG{THIS_YOUR_FLAG}",
-    "hints": [
-      "Zero-width characters (U200B, U200D) represent binary digits and encode ASCII via invisible text.",
-      "Use a specialized tool to extract and translate the invisible Unicode sequence.",
-      "Correct mapping from invisible characters to binary unlocks the true ASCII flag."
-    ],
-    "category": "Steganography",
-    "difficulty": "Advanced"
-  },
-{
-  "id": "q5",
-  "title": "The Final Register Readout",
-  "description": "You are a penetration tester attempting to recover a sensitive 6-character access key stored in a proprietary system. You have managed to dump the raw memory register, but the developer didn't use standard decimal numbers. Instead, they used a custom 'Quinary System' encoding where all values are calculated using powers of five before being stored. The captured, encoded register value (in the Quinary System) is the following sequence of three-digit numbers separated by colons: (313 : 310 : 314 : 421 : 322 : 310)",
-  "file_name": "",
-  "file_path": "",
-  "correct_flag": "CG{SPToWP}",
-  "hints": [
-    "Each three-digit number represents a character in the ASCII range",
-    "Convert each quinary number to decimal using powers of 5",
-    "Map the resulting decimal values to ASCII characters"
-  ],
-  "category": "Cryptography",
-  "difficulty": "Advanced"
-}
-];
+const SAMPLE_QUESTIONS: Question[] = [];
 
 export function ChallengePage({ teamId, teamName, leaderName, onLogout }: ChallengePageProps) {
   const [flag, setFlag] = useState('');
@@ -147,50 +69,58 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [difficultyFilter, setDifficultyFilter] = useState('All');
 
-  // Fetch challenges from database
+  // Fetch challenges from database or JSON file
   useEffect(() => {
     const fetchChallenges = async () => {
+      try {
+        // First, try to load from public/challenges.json
+        const response = await fetch('/challenges.json');
+        if (response.ok) {
+          const data = await response.json();
+          // Strip correct_flag before storing — flag validation is server-side only
+          const sanitized: Question[] = (data.challenges as any[]).map(
+            ({ correct_flag: _omit, ...rest }) => rest as Question
+          );
+          setAvailableChallenges(sanitized);
+          return;
+        }
+      } catch (err) {
+        console.error('Error loading challenges from JSON:', err);
+      }
+
       if (!isSupabaseConfigured) {
-        // Use hardcoded challenges if Supabase not configured
-        setAvailableChallenges(SAMPLE_QUESTIONS);
+        console.warn('Supabase not configured and challenges.json not found');
         return;
       }
 
       try {
         const { data: challenges, error } = await supabase
           .from('challenges')
-          .select('*')
+          // Explicitly omit correct_flag — never select sensitive columns on the client
+          .select('id, title, description, file_name, file_path, hints, category, difficulty')
           .eq('is_active', true)
           .order('created_at', { ascending: true });
 
         if (error) {
           console.error('Error fetching challenges:', error);
-          // Fallback to hardcoded challenges
-          setAvailableChallenges(SAMPLE_QUESTIONS);
           return;
         }
 
         if (challenges && challenges.length > 0) {
-          // Transform database challenges to Question format
           const transformedChallenges: Question[] = challenges.map((c: any) => ({
             id: c.id,
             title: c.title,
             description: c.description,
             file_name: c.file_name || '',
             file_path: c.file_path || '',
-            correct_flag: c.correct_flag,
             hints: c.hints || [],
             category: c.category,
             difficulty: c.difficulty
           }));
           setAvailableChallenges(transformedChallenges);
-        } else {
-          // No challenges in database, use hardcoded
-          setAvailableChallenges(SAMPLE_QUESTIONS);
         }
       } catch (err) {
         console.error('Error loading challenges:', err);
-        setAvailableChallenges(SAMPLE_QUESTIONS);
       }
     };
 
@@ -350,27 +280,27 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
     e.preventDefault();
     if (!question || !challenge) return;
 
+    const submittedFlag = flag.trim();
     const newAttempts = challenge.attempts + 1;
 
     try {
-      // Generate or retrieve submission UUID for idempotency
-      // Use localStorage to persist across retries
       const submissionStorageKey = `cybergauntlet_submission_${teamId}_${question.id}`;
       let submissionId = localStorage.getItem(submissionStorageKey);
-      
+
       if (!submissionId) {
-        // Generate new UUID for this submission attempt
         submissionId = crypto.randomUUID();
         localStorage.setItem(submissionStorageKey, submissionId);
       }
 
       const idempotencyKey = submissionId;
 
-      // Call server-side validation with all leaderboard data
+      // Always call the server-side edge function for flag validation.
+      // The server compares a SHA-256 hash of the submitted flag against
+      // challenge_validations.correct_flag_hash — the client never sees the flag.
       const { data, error } = await supabase.functions.invoke('validate-flag', {
         body: {
           challenge_id: question.id,
-          submitted_flag: flag.trim(),
+          submitted_flag: submittedFlag,
           team_name: teamName,
           time_spent: elapsedTime,
           attempts: newAttempts,
@@ -384,69 +314,59 @@ export function ChallengePage({ teamId, teamName, leaderName, onLogout }: Challe
       });
 
       if (error) {
-        console.error('Validation error:', error);
+        console.error('Flag validation error:', error);
         setResult('incorrect');
         setTimeout(() => setResult(null), 3000);
         return;
       }
 
-      if (data.is_correct) {
-        setResult('correct');
-        setIsRunning(false);
+      const isCorrect: boolean = data?.is_correct === true;
 
-        const completedTime = elapsedTime;
-        const updatedChallenge = {
-          ...challenge,
-          completed: true,
-          completedTime,
-          attempts: newAttempts
-        };
-
-        localStorage.setItem(`cybergauntlet_progress_${teamId}`, JSON.stringify({
-          ...updatedChallenge,
-          elapsedTime: completedTime
-        }));
-
-        const newCompleted = [...completedQuestions, question.id];
-        localStorage.setItem(`cybergauntlet_completed_${teamId}`, JSON.stringify(newCompleted));
-
-        // Leaderboard entry is now handled by validate-flag Edge Function
-        // No need for duplicate insert here - it's atomic in the function
-        if (data.duplicate_submission) {
-          console.log('Challenge already completed previously');
-        }
-
-        // Clear submission ID after successful completion
-        const submissionStorageKey = `cybergauntlet_submission_${teamId}_${question.id}`;
-        localStorage.removeItem(submissionStorageKey);
-
-        setChallenge(updatedChallenge);
-        setCompletedQuestions(newCompleted);
-        setFlag('');
-
-        setTimeout(() => {
-          if (newCompleted.length < availableChallenges.length) {
-            localStorage.removeItem(`cybergauntlet_progress_${teamId}`);
-            loadChallenge();
-            setResult(null);
-          }
-        }, 3000);
-      } else {
-        // Handle different types of incorrect responses
-        setResult(data.status || 'incorrect');
+      if (!isCorrect) {
+        // Incorrect — increment attempt count and persist; do NOT mark completed
+        setResult('incorrect');
         const updatedChallenge = { ...challenge, attempts: newAttempts };
         setChallenge(updatedChallenge);
         localStorage.setItem(`cybergauntlet_progress_${teamId}`, JSON.stringify({
           ...updatedChallenge,
           elapsedTime
         }));
-        
-        // Generate new submission ID for next attempt (failed attempt consumed this one)
-        const submissionStorageKey = `cybergauntlet_submission_${teamId}_${question.id}`;
-        localStorage.removeItem(submissionStorageKey);
-        
         setTimeout(() => setResult(null), 3000);
+        return;
       }
+
+      // Server confirmed correct flag
+      setResult('correct');
+      setIsRunning(false);
+
+      const completedTime = elapsedTime;
+      const updatedChallenge = {
+        ...challenge,
+        completed: true,
+        completedTime,
+        attempts: newAttempts
+      };
+
+      localStorage.setItem(`cybergauntlet_progress_${teamId}`, JSON.stringify({
+        ...updatedChallenge,
+        elapsedTime: completedTime
+      }));
+
+      const newCompleted = [...completedQuestions, question.id];
+      localStorage.setItem(`cybergauntlet_completed_${teamId}`, JSON.stringify(newCompleted));
+      localStorage.removeItem(`cybergauntlet_submission_${teamId}_${question.id}`);
+
+      setChallenge(updatedChallenge);
+      setCompletedQuestions(newCompleted);
+      setFlag('');
+
+      setTimeout(() => {
+        if (newCompleted.length < availableChallenges.length) {
+          localStorage.removeItem(`cybergauntlet_progress_${teamId}`);
+          loadChallenge();
+          setResult(null);
+        }
+      }, 3000);
     } catch (err) {
       console.error('Error submitting flag:', err);
       setResult('incorrect');
