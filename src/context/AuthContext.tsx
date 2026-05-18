@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import type { User } from '@supabase/supabase-js';
 
 type AuthContextType = {
@@ -28,12 +28,32 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const refreshTimerRef = useRef<number | null>(null);
 
   /**
+   * Logout all devices by signing out
+   */
+  const logoutAllDevices = useCallback(async () => {
+    try {
+      localStorage.removeItem(TOKEN_STORAGE_KEY);
+      if (refreshTimerRef.current) {
+        clearInterval(refreshTimerRef.current);
+        refreshTimerRef.current = null;
+      }
+      if (isSupabaseConfigured) {
+        await supabase.auth.signOut();
+      }
+    } catch (err) {
+      console.error('Error logging out all devices:', err);
+    }
+  }, []);
+
+  /**
    * Refresh the access token using the stored refresh token
    */
   const refreshToken = useCallback(async () => {
+    if (!isSupabaseConfigured) return;
+
     try {
       const storedRefreshToken = localStorage.getItem(TOKEN_STORAGE_KEY);
-      
+
       if (!storedRefreshToken) {
         console.log('No refresh token found');
         return;
@@ -54,7 +74,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (data && data.access_token && data.refresh_token) {
         // Store new refresh token
         localStorage.setItem(TOKEN_STORAGE_KEY, data.refresh_token);
-        
+
         // Set the new session
         const { error: sessionError } = await supabase.auth.setSession({
           access_token: data.access_token,
@@ -78,6 +98,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
    * Create user profile if it doesn't exist
    */
   const ensureProfileExists = useCallback(async (userId: string) => {
+    if (!isSupabaseConfigured) return;
+
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -125,6 +147,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const initializeAuth = async () => {
       try {
+        if (!isSupabaseConfigured) {
+          if (mounted) {
+            setUser(null);
+            setLoading(false);
+          }
+          return;
+        }
+
         // Get initial session from local storage or auth state
         const { data: { session }, error } = await supabase.auth.getSession();
 
@@ -157,45 +187,49 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     initializeAuth();
 
-    // Listen for auth state changes
-    const { data: subscription } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (!mounted) return;
+    // Listen for auth state changes (only if Supabase is configured)
+    let subscription: any = null;
+    if (isSupabaseConfigured) {
+      const { data } = supabase.auth.onAuthStateChange(
+        async (event, session) => {
+          if (!mounted) return;
 
-        setUser(session?.user ?? null);
-        setLoading(false);
+          setUser(session?.user ?? null);
+          setLoading(false);
 
-        if (event === 'SIGNED_IN' && session?.user) {
-          // Ensure profile exists for new user
-          await ensureProfileExists(session.user.id);
+          if (event === 'SIGNED_IN' && session?.user) {
+            // Ensure profile exists for new user
+            await ensureProfileExists(session.user.id);
 
-          // Store refresh token on sign in
-          if (session.refresh_token) {
-            localStorage.setItem(TOKEN_STORAGE_KEY, session.refresh_token);
+            // Store refresh token on sign in
+            if (session.refresh_token) {
+              localStorage.setItem(TOKEN_STORAGE_KEY, session.refresh_token);
+            }
+
+            const expiresIn = session.expires_in || 900;
+            setTokenExpiresIn(expiresIn);
+            setupRefreshTimer();
           }
 
-          const expiresIn = session.expires_in || 900;
-          setTokenExpiresIn(expiresIn);
-          setupRefreshTimer();
-        }
+          if (event === 'SIGNED_OUT') {
+            // Clear refresh token on sign out
+            localStorage.removeItem(TOKEN_STORAGE_KEY);
+            if (refreshTimerRef.current) {
+              clearInterval(refreshTimerRef.current);
+              refreshTimerRef.current = null;
+            }
+          }
 
-        if (event === 'SIGNED_OUT') {
-          // Clear refresh token on sign out
-          localStorage.removeItem(TOKEN_STORAGE_KEY);
-          if (refreshTimerRef.current) {
-            clearInterval(refreshTimerRef.current);
-            refreshTimerRef.current = null;
+          if (event === 'TOKEN_REFRESHED' && session) {
+            // Update stored refresh token after Supabase auto-refresh
+            if (session.refresh_token) {
+              localStorage.setItem(TOKEN_STORAGE_KEY, session.refresh_token);
+            }
           }
         }
-
-        if (event === 'TOKEN_REFRESHED' && session) {
-          // Update stored refresh token after Supabase auto-refresh
-          if (session.refresh_token) {
-            localStorage.setItem(TOKEN_STORAGE_KEY, session.refresh_token);
-          }
-        }
-      }
-    );
+      );
+      subscription = data;
+    }
 
     // Cleanup on unmount
     return () => {

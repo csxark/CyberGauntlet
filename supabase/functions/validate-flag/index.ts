@@ -2,8 +2,9 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGINS') || 'http://localhost:5173',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
 // Rate limiting configuration
@@ -366,36 +367,21 @@ serve(async (req) => {
       // Call database function to validate and check for anomalies
       const { data: validationResult, error: validationError } = await supabaseClient
         .rpc('register_leaderboard_submission', {
-          p_team_id: safeTeamName,
-          p_challenge_id: challenge_id,
-          p_submitted_time_spent: submittedTimeSpent,
-          p_submitted_attempts: submittedAttempts,
-          p_submitted_hints_used: submittedHintsUsed,
-          p_session_start_time: sessionStartTime.toISOString()
+          p_team_name: safeTeamName,
+          p_question_id: challenge_id,
+          p_time_spent: submittedTimeSpent,
+          p_attempts: submittedAttempts,
+          p_hints_used: submittedHintsUsed,
+          p_points: 0, // Will be calculated after validation
+          p_idempotency_key: idempotency_key || null
         })
 
       let validationPassed = true
       let validationWarnings: string[] = []
-      
-      if (!validationError && validationResult && validationResult.length > 0) {
-        const validation = validationResult[0]
-        validationPassed = validation.is_valid
-        validationWarnings = validation.warnings || []
-        
-        if (validation.should_flag) {
-          console.warn(`LEADERBOARD_INTEGRITY: ${safeTeamName} - ${challenge_id}: ${validation.flag_reason}`)
-          logAbuseToDB(
-            supabaseClient,
-            safeTeamName,
-            challenge_id,
-            rateLimitCheck.session,
-            'medium',
-            `Score validation warnings: ${validationWarnings.join(', ')}`,
-            req.headers.get('X-Forwarded-For') || undefined,
-            req.headers.get('User-Agent') || undefined
-          )
-        }
-      }
+
+      if (!validationError && validationResult) {
+        // Successfully registered submission
+        console.log(`Submission registered for team ${safeTeamName}: ${challenge_id}`)
 
       // ============ CALCULATE SERVER-SIDE POINTS ============
       // Do NOT trust client-provided time_spent - recalculate based on validated elapsed time
