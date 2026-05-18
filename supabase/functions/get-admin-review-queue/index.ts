@@ -9,8 +9,6 @@ const corsHeaders = {
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
 
   try {
     const supabaseClient = createClient(
@@ -21,8 +19,6 @@ serve(async (req) => {
           headers: { Authorization: req.headers.get('Authorization')! },
         },
       }
-    )
-
     const { sort_by = 'severity', filter_severity = null, limit = 100, offset = 0 } = await req.json()
 
     // Validate sort column

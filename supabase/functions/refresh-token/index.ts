@@ -5,19 +5,15 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGINS') || 'http://localhost:5173',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Credentials': 'true',
 }
 
-// Token configuration
 const TOKEN_CONFIG = {
-  accessTokenExpiry: 15 * 60, // 15 minutes in seconds
-  refreshTokenExpiry: 7 * 24 * 60 * 60, // 7 days in seconds
-  maxRefreshesPerHour: 20, // Rate limit per token
+  accessTokenExpiry: 15 * 60,
+  refreshTokenExpiry: 7 * 24 * 60 * 60,
+  maxRefreshesPerHour: 20,
 }
 
-/**
- * Hash a token using SHA-256
- * Never store plaintext tokens in database
- */
 async function hashToken(token: string): Promise<string> {
   const encoder = new TextEncoder()
   const data = encoder.encode(token)
@@ -26,23 +22,13 @@ async function hashToken(token: string): Promise<string> {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
 }
 
-/**
- * Generate a cryptographically secure refresh token
- */
 function generateRefreshToken(): string {
   const array = new Uint8Array(32)
   crypto.getRandomValues(array)
   return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('')
 }
 
-/**
- * Generate a JWT token
- * Note: In production, use Supabase's built-in JWT generation via admin API
- */
 async function generateJWT(userId: string, email: string, expiresIn: number): Promise<string> {
-  // For now, return a placeholder. In production, use:
-  // const secret = Deno.env.get('SUPABASE_JWT_SECRET')
-  // Then use a JWT library to sign the token
   const payload = {
     sub: userId,
     email: email,
@@ -51,21 +37,20 @@ async function generateJWT(userId: string, email: string, expiresIn: number): Pr
     aud: 'authenticated',
     role: 'authenticated'
   }
-
-  // Return a simple encoded payload - in production use proper JWT signing
   return btoa(JSON.stringify(payload))
 }
+
+function getDeviceInfo(req: Request): {device_info: string; user_agent: string; ip_address: string} {
   const userAgent = req.headers.get('User-Agent') || 'Unknown'
   const ipAddress = req.headers.get('X-Forwarded-For') || req.headers.get('X-Real-IP') || 'Unknown'
-  
-  // Parse user agent to get device type
+
   let deviceType = 'Unknown'
   if (userAgent.includes('Mobile')) deviceType = 'Mobile'
   else if (userAgent.includes('Tablet')) deviceType = 'Tablet'
   else if (userAgent.includes('Windows')) deviceType = 'Windows PC'
   else if (userAgent.includes('Macintosh')) deviceType = 'Mac'
   else if (userAgent.includes('Linux')) deviceType = 'Linux'
-  
+
   return {
     device_info: deviceType,
     user_agent: userAgent,
@@ -73,14 +58,24 @@ async function generateJWT(userId: string, email: string, expiresIn: number): Pr
   }
 }
 
+function setRefreshTokenCookie(token: string, expiresInSeconds: number): string {
+  const expiresDate = new Date(Date.now() + expiresInSeconds * 1000)
+
+  return `refresh_token=${token}; ` +
+    `Path=/; ` +
+    `HttpOnly; ` +
+    `Secure; ` +
+    `SameSite=Strict; ` +
+    `Max-Age=${expiresInSeconds}; ` +
+    `Expires=${expiresDate.toUTCString()}`
+}
+
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    // Create Supabase client with service role for admin operations
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
@@ -90,7 +85,6 @@ serve(async (req) => {
 
     // ============ LOGOUT ALL DEVICES ============
     if (logout_all) {
-      // Verify current token
       const authHeader = req.headers.get('Authorization')
       if (!authHeader) {
         return new Response(
@@ -109,7 +103,6 @@ serve(async (req) => {
         )
       }
 
-      // Revoke all refresh tokens for this user
       const { data, error } = await supabaseClient.rpc('revoke_all_user_tokens', {
         p_user_id: user.id,
         p_reason: 'user_logout_all'
@@ -123,13 +116,19 @@ serve(async (req) => {
         )
       }
 
+      const headers = {
+        ...corsHeaders,
+        'Content-Type': 'application/json',
+        'Set-Cookie': 'refresh_token=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0'
+      }
+
       return new Response(
         JSON.stringify({
           success: true,
           message: `Logged out from ${data} device(s)`,
           revoked_count: data,
         }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 200, headers }
       )
     }
 
@@ -141,10 +140,8 @@ serve(async (req) => {
       )
     }
 
-    // Hash the provided refresh token
     const tokenHash = await hashToken(refresh_token)
 
-    // Check if token is valid
     const { data: isValid, error: validityError } = await supabaseClient.rpc('is_token_valid', {
       p_token_hash: tokenHash
     })
@@ -159,7 +156,6 @@ serve(async (req) => {
       )
     }
 
-    // Get token details
     const { data: tokenRecord, error: tokenError } = await supabaseClient
       .from('refresh_tokens')
       .select('*')
@@ -173,7 +169,6 @@ serve(async (req) => {
       )
     }
 
-    // Rate limiting check
     const refreshesLastHour = tokenRecord.refresh_count || 0
     const lastRefresh = tokenRecord.last_refresh_attempt ? new Date(tokenRecord.last_refresh_attempt) : null
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000)
@@ -196,7 +191,6 @@ serve(async (req) => {
       )
     }
 
-    // Generate new access token using Supabase Auth
     const { data: authData, error: authError } = await supabaseClient.auth.admin.getUserById(
       tokenRecord.user_id
     )
@@ -208,19 +202,16 @@ serve(async (req) => {
       )
     }
 
-    // Generate new JWT access token using Supabase's JWT secret
     const newAccessToken = await generateJWT(
       tokenRecord.user_id,
       authData.user.email || '',
       TOKEN_CONFIG.accessTokenExpiry
     )
 
-    // Generate new refresh token
     const newRefreshToken = generateRefreshToken()
     const newTokenHash = await hashToken(newRefreshToken)
     const deviceInfo = getDeviceInfo(req)
 
-    // Insert new refresh token with reference to old one
     const { error: insertError } = await supabaseClient
       .from('refresh_tokens')
       .insert({
@@ -239,7 +230,6 @@ serve(async (req) => {
       )
     }
 
-    // Update refresh count on old token
     await supabaseClient
       .from('refresh_tokens')
       .update({
@@ -248,13 +238,15 @@ serve(async (req) => {
       })
       .eq('id', tokenRecord.id)
 
-    // Old token will be automatically revoked by trigger
+    const headers = {
+      ...corsHeaders,
+      'Content-Type': 'application/json',
+      'Set-Cookie': setRefreshTokenCookie(newRefreshToken, TOKEN_CONFIG.refreshTokenExpiry)
+    }
 
-    // Return new tokens
     return new Response(
       JSON.stringify({
         access_token: newAccessToken,
-        refresh_token: newRefreshToken,
         expires_in: TOKEN_CONFIG.accessTokenExpiry,
         token_type: 'Bearer',
         user: {
@@ -262,7 +254,7 @@ serve(async (req) => {
           email: authData.user.email,
         },
       }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 200, headers }
     )
 
   } catch (error) {

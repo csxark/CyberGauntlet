@@ -302,33 +302,115 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Basic RLS Policies (permissive - adjust based on security requirements)
+-- Basic RLS Policies (enforce least privilege)
 
 -- Profiles: Users can read all profiles, update their own
-CREATE POLICY "Allow public read" ON profiles
+CREATE POLICY "Allow public read profiles" ON profiles
   FOR SELECT USING (true);
 
 CREATE POLICY "Allow users to update own profile" ON profiles
-  FOR UPDATE USING (auth.uid() = user_id);
+  FOR UPDATE USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
 
--- Leaderboard: Public read
-CREATE POLICY "Allow public read" ON leaderboard
+CREATE POLICY "Prevent non-owners from inserting profiles" ON profiles
+  FOR INSERT WITH CHECK (false);
+
+CREATE POLICY "Prevent profile deletion" ON profiles
+  FOR DELETE USING (false);
+
+-- Leaderboard: Public read only
+CREATE POLICY "Allow public read leaderboard" ON leaderboard
   FOR SELECT USING (true);
 
--- Challenges: Public read
-CREATE POLICY "Allow public read" ON challenges
+CREATE POLICY "Prevent direct leaderboard inserts" ON leaderboard
+  FOR INSERT WITH CHECK (false);
+
+CREATE POLICY "Prevent leaderboard updates" ON leaderboard
+  FOR UPDATE USING (false);
+
+-- Challenges: Public read only
+CREATE POLICY "Allow public read challenges" ON challenges
   FOR SELECT USING (true);
 
--- Team notes: Team members can read/write
-CREATE POLICY "Allow team members to read" ON team_notes
+CREATE POLICY "Prevent direct challenge inserts" ON challenges
+  FOR INSERT WITH CHECK (false);
+
+CREATE POLICY "Prevent challenge updates" ON challenges
+  FOR UPDATE USING (false);
+
+-- Challenge Validations: Public read
+CREATE POLICY "Allow public read challenge validations" ON challenge_validations
+  FOR SELECT USING (true);
+
+CREATE POLICY "Prevent challenge validations manipulation" ON challenge_validations
+  FOR INSERT WITH CHECK (false);
+
+-- Challenge Sessions: Team members can read their sessions
+CREATE POLICY "Allow read challenge sessions" ON challenge_sessions
+  FOR SELECT USING (true);
+
+CREATE POLICY "Prevent direct session inserts" ON challenge_sessions
+  FOR INSERT WITH CHECK (false);
+
+-- Team Notes: Team members can read/write
+CREATE POLICY "Allow read team notes" ON team_notes
   FOR SELECT USING (true);
 
 CREATE POLICY "Allow users to create notes" ON team_notes
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
--- Refresh tokens: Owned by user, requires auth
-CREATE POLICY "Users can manage their own tokens" ON refresh_tokens
-  FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Allow users to update own notes" ON team_notes
+  FOR UPDATE USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Allow users to delete own notes" ON team_notes
+  FOR DELETE USING (auth.uid() = user_id);
+
+-- Refresh Tokens: Owned by user, only user can access their own
+CREATE POLICY "Users can read their own tokens" ON refresh_tokens
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own tokens" ON refresh_tokens
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users cannot update tokens" ON refresh_tokens
+  FOR UPDATE USING (false);
+
+CREATE POLICY "Users cannot delete tokens (auto-revoked)" ON refresh_tokens
+  FOR DELETE USING (false);
+
+-- Team Sessions: Team members access their sessions
+CREATE POLICY "Users can read team sessions" ON team_sessions
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert team sessions" ON team_sessions
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their session" ON team_sessions
+  FOR UPDATE USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+-- Rate Limit Logs: Not directly accessed by users
+CREATE POLICY "Prevent user access to rate limit logs" ON rate_limit_logs
+  FOR ALL USING (false);
+
+-- Posts: Users can read all, write their own
+CREATE POLICY "Allow public read posts" ON posts
+  FOR SELECT USING (true);
+
+CREATE POLICY "Allow users to create posts" ON posts
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Allow users to update own posts" ON posts
+  FOR UPDATE USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+-- Events: Read-only
+CREATE POLICY "Allow public read events" ON events
+  FOR SELECT USING (true);
+
+CREATE POLICY "Prevent direct event inserts" ON events
+  FOR INSERT WITH CHECK (false);
 
 GRANT USAGE ON SCHEMA public TO anon, authenticated;
 GRANT SELECT ON profiles, challenges, leaderboard TO anon, authenticated;

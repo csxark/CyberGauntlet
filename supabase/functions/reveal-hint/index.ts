@@ -9,12 +9,16 @@ const corsHeaders = {
 const HINT_COST = 10
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+
+  const authHeader = req.headers.get('Authorization')
+  if (!authHeader) {
+    return new Response(
+      JSON.stringify({ error: 'Missing authorization header' }),
+      { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
   }
 
-  try {
     // Create Supabase client with service role for transaction support
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
